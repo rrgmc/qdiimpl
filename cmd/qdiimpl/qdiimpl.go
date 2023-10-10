@@ -81,7 +81,8 @@ func run(source, typ string, tags []string) error {
 		outputName = filepath.Join(source, strings.ToLower(baseName))
 	}
 	if _, err := os.Stat(outputName); err == nil {
-		_ = os.Truncate(outputName, 0)
+		// _ = os.Truncate(outputName, 0)
+		return fmt.Errorf("file '%s' already exists", outputName)
 	}
 
 	err = gen(outputName, obj, obj.Type().Underlying().(*types.Interface).Complete())
@@ -263,19 +264,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
 			}
 		}).Block(
-			List(Id("callerFunc"), Id("callerFile"), Id("callerLine")).Op(":=").
-				Id("d").Dot("getCallerFuncName").Call(),
-			Id("debugCtx").Op(":=").Op("&").Id(objContext).Values(
-				Id("ExecCount").Op(":").Id("d").
-					Dot("checkCallMethod").Call(Lit(mtd.Name()), Id("d").Dot("impl"+mtd.Name()).Op("==").Nil()),
-				Id("CallerFunc").Op(":").Id("callerFunc"),
-				Id("CallerFile").Op(":").Id("callerFile"),
-				Id("CallerLine").Op(":").Id("callerLine"),
-				Id("Data").Op(":").Id("d").Dot("data"),
-			),
 			Do(func(s *Statement) {
 				call := Id("d").Dot("impl" + mtd.Name()).CallFunc(func(cgroup *Group) {
-					cgroup.Id("debugCtx")
+					cgroup.Id("d").Dot("createContext").Call(
+						Lit(mtd.Name()), Id("d").Dot("impl"+mtd.Name()).Op("==").Nil(),
+					)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
 						cgroup.Id(sigParam.Name())
@@ -294,39 +287,75 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// getCallerFuncName
-	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id("getCallerFuncName").Params().Params(
-		Id("funcName").String(),
-		Id("file").String(),
-		Id("line").Int(),
-	).Block(
-		List(Id("counter"), Id("file"), Id("line"), Id("success")).
-			Op(":=").Qual("runtime", "Caller").Call(Lit(2)),
-		If(Op("!").Id("success")).Block(
-			Panic(Lit("runtime.Caller failed")),
-		),
-		Return(
-			Qual("runtime", "FuncForPC").Call(Id("counter")).Dot("Name").Call(),
-			Id("file"),
-			Id("line"),
-		),
-	)
+	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
+		Id("getCallerFuncName").
+		Params(
+			Id("skip").Int(),
+		).
+		Params(
+			Id("funcName").String(),
+			Id("file").String(),
+			Id("line").Int()).
+		Block(
+			List(Id("counter"), Id("file"), Id("line"), Id("success")).
+				Op(":=").Qual("runtime", "Caller").Call(Id("skip")),
+			If(Op("!").Id("success")).Block(
+				Panic(Lit("runtime.Caller failed")),
+			),
+			Return(
+				Qual("runtime", "FuncForPC").Call(Id("counter")).Dot("Name").Call(),
+				Id("file"),
+				Id("line"),
+			),
+		)
 
 	f.Line()
 
 	// checkCallMethod
-	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id("checkCallMethod").Params(
-		Id("methodName").String(),
-		Id("implIsNil").Bool(),
-	).Params(
-		Id("count").Int(),
-	).Block(
-		If(Id("implIsNil")).Block(
-			Panic(Qual("fmt", "Errorf").
-				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))),
-		),
-		Id("d").Dot("execCount").Index(Id("methodName")).Op("++"),
-		Return(Id("d").Dot("execCount").Index(Id("methodName"))),
-	)
+	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
+		Id("checkCallMethod").
+		Params(
+			Id("methodName").String(),
+			Id("implIsNil").Bool(),
+		).
+		Params(
+			Id("count").Int(),
+		).
+		Block(
+			If(Id("implIsNil")).Block(
+				Panic(Qual("fmt", "Errorf").
+					Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))),
+			),
+			Id("d").Dot("execCount").Index(Id("methodName")).Op("++"),
+			Return(Id("d").Dot("execCount").Index(Id("methodName"))),
+		)
+
+	f.Line()
+
+	// createContext
+	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
+		Id("createContext").
+		Params(
+			Id("methodName").String(),
+			Id("implIsNil").Bool(),
+			// Id("callerSkip").Int(),
+		).
+		Params(
+			Op("*").Id(objContext),
+		).
+		Block(
+			List(Id("callerFunc"), Id("callerFile"), Id("callerLine")).Op(":=").
+				Id("d").Dot("getCallerFuncName").Call(Lit(3)),
+			Return(
+				Op("&").Id(objContext).Values(
+					Id("ExecCount").Op(":").Id("d").
+						Dot("checkCallMethod").Call(Id("methodName"), Id("implIsNil")),
+					Id("CallerFunc").Op(":").Id("callerFunc"),
+					Id("CallerFile").Op(":").Id("callerFile"),
+					Id("CallerLine").Op(":").Id("callerLine"),
+					Id("Data").Op(":").Id("d").Dot("data"),
+				)),
+		)
 
 	// Write to file.
 	fmt.Printf("Writing file %s...", outputName)
