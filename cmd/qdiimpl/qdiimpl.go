@@ -171,6 +171,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// ensure struct implements interface
 	if objNamedType.TypeParams().Len() == 0 { // with generics, it is harder to find suitable types
 		f.Line()
+		// # var _ TYPE = (*debugTYPE)(nil)
 		f.Var().Id("_").Add(getQualCode(obj.Type()).TypesFunc(codeObjectTypes)).Op("=").
 			Parens(Op("*").Id(objName).TypesFunc(codeObjectTypes)).Parens(Nil())
 	}
