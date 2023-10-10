@@ -19,11 +19,12 @@ type debugMyInterface[T any, X II] struct {
 	execCount map[string]int
 	data      any
 
-	implData   func(debugCtx *DebugMyInterfaceContext)
-	implGet    func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)
-	implOther  func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int
-	implOther2 func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int
-	implSet    func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error
+	implData     func(debugCtx *DebugMyInterfaceContext)
+	implGet      func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)
+	implOther    func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int
+	implOther2   func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int
+	implSet      func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error
+	implinternal func(debugCtx *DebugMyInterfaceContext) bool
 }
 
 type DebugMyInterfaceOption[T any, X II] func(*debugMyInterface[T, X])
@@ -72,6 +73,12 @@ func WithDebugMyInterfaceSet[T any, X II](implSet func(debugCtx *DebugMyInterfac
 	}
 }
 
+func WithDebugMyInterfaceinternal[T any, X II](implinternal func(debugCtx *DebugMyInterfaceContext) bool) DebugMyInterfaceOption[T, X] {
+	return func(d *debugMyInterface[T, X]) {
+		d.implinternal = implinternal
+	}
+}
+
 func (d *debugMyInterface[T, X]) Data() {
 	d.implData(d.createContext("Data", d.implData == nil))
 }
@@ -90,6 +97,10 @@ func (d *debugMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 
 func (d *debugMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
 	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
+}
+
+func (d *debugMyInterface[T, X]) internal() bool {
+	return d.implinternal(d.createContext("internal", d.implinternal == nil))
 }
 
 func (d *debugMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file string, line int) {
