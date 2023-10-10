@@ -73,37 +73,27 @@ func WithDebugMyInterfaceSet[T any, X II](implSet func(debugCtx *DebugMyInterfac
 }
 
 func (d *debugMyInterface[T, X]) Data() {
-	callerFunc, callerFile, callerLine := d.getCallerFuncName()
-	debugCtx := &DebugMyInterfaceContext{ExecCount: d.checkCallMethod("Data", d.implData == nil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
-	d.implData(debugCtx)
+	d.implData(d.createContext("Data", d.implData == nil))
 }
 
 func (d *debugMyInterface[T, X]) Get(ctx context.Context, name string) (T, error) {
-	callerFunc, callerFile, callerLine := d.getCallerFuncName()
-	debugCtx := &DebugMyInterfaceContext{ExecCount: d.checkCallMethod("Get", d.implGet == nil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
-	return d.implGet(debugCtx, ctx, name)
+	return d.implGet(d.createContext("Get", d.implGet == nil), ctx, name)
 }
 
 func (d *debugMyInterface[T, X]) Other(si SecondInterface) int {
-	callerFunc, callerFile, callerLine := d.getCallerFuncName()
-	debugCtx := &DebugMyInterfaceContext{ExecCount: d.checkCallMethod("Other", d.implOther == nil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
-	return d.implOther(debugCtx, si)
+	return d.implOther(d.createContext("Other", d.implOther == nil), si)
 }
 
 func (d *debugMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
-	callerFunc, callerFile, callerLine := d.getCallerFuncName()
-	debugCtx := &DebugMyInterfaceContext{ExecCount: d.checkCallMethod("Other2", d.implOther2 == nil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
-	return d.implOther2(debugCtx, ti)
+	return d.implOther2(d.createContext("Other2", d.implOther2 == nil), ti)
 }
 
 func (d *debugMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
-	callerFunc, callerFile, callerLine := d.getCallerFuncName()
-	debugCtx := &DebugMyInterfaceContext{ExecCount: d.checkCallMethod("Set", d.implSet == nil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
-	return d.implSet(debugCtx, ctx, name, value)
+	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
 }
 
-func (d *debugMyInterface[T, X]) getCallerFuncName() (funcName string, file string, line int) {
-	counter, file, line, success := runtime.Caller(2)
+func (d *debugMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file string, line int) {
+	counter, file, line, success := runtime.Caller(skip)
 	if !success {
 		panic("runtime.Caller failed")
 	}
@@ -116,4 +106,9 @@ func (d *debugMyInterface[T, X]) checkCallMethod(methodName string, implIsNil bo
 	}
 	d.execCount[methodName]++
 	return d.execCount[methodName]
+}
+
+func (d *debugMyInterface[T, X]) createContext(methodName string, implIsNil bool) *DebugMyInterfaceContext {
+	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
+	return &DebugMyInterfaceContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
 }
