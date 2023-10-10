@@ -110,6 +110,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	codeObjectTypesWithType := addTypeParamsList(objNamedType.TypeParams(), true)
 
 	// Debug Context
+	// # type DebugTYPEContext struct {}
 	f.Type().Id(objContext).
 		Struct(
 			Id("ExecCount").Int(),
@@ -121,6 +122,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// Struct implementation
+	// # type debugTYPE struct {}
 	f.Type().Id(objName).
 		TypesFunc(func(tgroup *Group) {
 			for t := 0; t < objNamedType.TypeParams().Len(); t++ {
@@ -172,11 +174,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// option type
+	// # type DebugTYPEOption func(*debugTYPE)
 	f.Type().Id(objOption).TypesFunc(codeObjectTypesWithType).Func().Params(Op("*").Id(objName).TypesFunc(codeObjectTypes))
 
 	f.Line()
 
 	// constructor
+	// # func NewDebugTYPE(options ...DebugTYPEOption) TYPE {}
 	f.Func().Id("New"+objNameU).
 		TypesFunc(codeObjectTypesWithType).
 		Params(Id("options").Op("...").Id(objOption).TypesFunc(codeObjectTypes)).
@@ -194,6 +198,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// WithData option
+	// # func WithDebugTYPEData(data any) DebugTYPEOption {}
 	dataOptionName := getUniqueName("Data", func(nameExists string) bool {
 		for j := 0; j < iface.NumMethods(); j++ {
 			if iface.Method(j).Name() == nameExists {
@@ -217,6 +222,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 		f.Line()
 
+		// # func WithDebugTYPEMETHOD(implMETHOD func(debugCtx *DebugTYPEContext, METHODPARAMS...) (METHODRESULTS...)) DebugTYPEOption {}
 		f.Func().Id("With" + objNameU + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add debug context parameter
@@ -253,6 +259,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		mtd := iface.Method(j)
 		sig := mtd.Type().(*types.Signature)
 
+		// # func (d *debugTYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
 				sigParam := sig.Params().At(k)
@@ -287,6 +294,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// getCallerFuncName
+	// # func (d *debugTYPE) getCallerFuncName(skip int) (funcName string, file string, line int) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("getCallerFuncName").
 		Params(
@@ -312,6 +320,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// checkCallMethod
+	// # func (d *debugTYPE) checkCallMethod(methodName string, implIsNil bool) (count int) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("checkCallMethod").
 		Params(
@@ -333,6 +342,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// createContext
+	// # func (d *debugTYPE[T, X]) createContext(methodName string, implIsNil bool) *DebugTYPEContext {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("createContext").
 		Params(
