@@ -8,12 +8,17 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func pkgInfoFromPath(srcDir string, mode packages.LoadMode, tags []string) (*packages.Package, error) {
+func pkgInfoFromPath(srcDir string, packageName string, mode packages.LoadMode, tags []string) (*packages.Package, error) {
+	var patterns []string
+	if packageName != "" {
+		patterns = append(patterns, packageName)
+	}
+
 	pkgs, err := packages.Load(&packages.Config{
 		Mode:       mode,
 		Dir:        srcDir,
 		BuildFlags: tags,
-	})
+	}, patterns...)
 	if err != nil {
 		return nil, err
 	}
