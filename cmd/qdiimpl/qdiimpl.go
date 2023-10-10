@@ -19,6 +19,7 @@ var (
 	nameSuffix = flag.String("name-suffix", "", "interface name suffix; default is blank")
 	output     = flag.String("output", "", "output file name; default srcdir/<type>_qdiimpl.go")
 	buildTags  = flag.String("tags", "", "comma-separated list of build tags to apply")
+	overwrite  = flag.Bool("overwrite", false, "overwrite file if exists")
 )
 
 // Usage is a replacement usage function for the flags package.
@@ -81,8 +82,11 @@ func run(source, typ string, tags []string) error {
 		outputName = filepath.Join(source, strings.ToLower(baseName))
 	}
 	if _, err := os.Stat(outputName); err == nil {
-		// _ = os.Truncate(outputName, 0)
-		return fmt.Errorf("file '%s' already exists", outputName)
+		if *overwrite {
+			_ = os.Truncate(outputName, 0)
+		} else {
+			return fmt.Errorf("file '%s' already exists", outputName)
+		}
 	}
 
 	err = gen(outputName, obj, obj.Type().Underlying().(*types.Interface).Complete())
@@ -197,61 +201,6 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	f.Line()
 
-	// WithData option
-	// # func WithDebugTYPEData(data any) DebugTYPEOption {}
-	dataOptionName := getUniqueName("Data", func(nameExists string) bool {
-		for j := 0; j < iface.NumMethods(); j++ {
-			if iface.Method(j).Name() == nameExists {
-				return true
-			}
-		}
-		return false
-	})
-	f.Func().Id("With" + objNameU + dataOptionName).TypesFunc(codeObjectTypesWithType).Params(
-		Id("data").Any(),
-	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
-		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
-			Id("d").Dot("data").Op("=").Id("data"),
-		)),
-	)
-
-	// method options
-	for j := 0; j < iface.NumMethods(); j++ {
-		mtd := iface.Method(j)
-		sig := mtd.Type().(*types.Signature)
-
-		f.Line()
-
-		// # func WithDebugTYPEMETHOD(implMETHOD func(debugCtx *DebugTYPEContext, METHODPARAMS...) (METHODRESULTS...)) DebugTYPEOption {}
-		f.Func().Id("With" + objNameU + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
-			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
-				// add debug context parameter
-				debugCtxName := getUniqueName("debugCtx", func(nameExists string) bool {
-					for k := 0; k < sig.Params().Len(); k++ {
-						if sig.Params().At(k).Name() == nameExists {
-							return true
-						}
-					}
-					return false
-				})
-				pgroup.Id(debugCtxName).Op("*").Id(objContext)
-				for k := 0; k < sig.Params().Len(); k++ {
-					sigParam := sig.Params().At(k)
-					pgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
-				}
-			}).ParamsFunc(func(rgroup *Group) {
-				for k := 0; k < sig.Results().Len(); k++ {
-					sigParam := sig.Results().At(k)
-					rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
-				}
-			}),
-		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
-			Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
-				Id("d").Dot("impl" + mtd.Name()).Op("=").Id("impl" + mtd.Name()),
-			)),
-		)
-	}
-
 	// interface methods
 	for j := 0; j < iface.NumMethods(); j++ {
 		f.Line()
@@ -365,6 +314,65 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					Id("Data").Op(":").Id("d").Dot("data"),
 				)),
 		)
+
+	f.Line()
+	f.Comment("Options")
+	f.Line()
+
+	// WithData option
+	// # func WithDebugTYPEData(data any) DebugTYPEOption {}
+	dataOptionName := getUniqueName("Data", func(nameExists string) bool {
+		for j := 0; j < iface.NumMethods(); j++ {
+			if iface.Method(j).Name() == nameExists {
+				return true
+			}
+		}
+		return false
+	})
+	f.Func().Id("With" + objNameU + dataOptionName).TypesFunc(codeObjectTypesWithType).Params(
+		Id("data").Any(),
+	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
+		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
+			Id("d").Dot("data").Op("=").Id("data"),
+		)),
+	)
+
+	// method options
+	for j := 0; j < iface.NumMethods(); j++ {
+		mtd := iface.Method(j)
+		sig := mtd.Type().(*types.Signature)
+
+		f.Line()
+
+		// # func WithDebugTYPEMETHOD(implMETHOD func(debugCtx *DebugTYPEContext, METHODPARAMS...) (METHODRESULTS...)) DebugTYPEOption {}
+		f.Func().Id("With" + objNameU + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
+			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
+				// add debug context parameter
+				debugCtxName := getUniqueName("debugCtx", func(nameExists string) bool {
+					for k := 0; k < sig.Params().Len(); k++ {
+						if sig.Params().At(k).Name() == nameExists {
+							return true
+						}
+					}
+					return false
+				})
+				pgroup.Id(debugCtxName).Op("*").Id(objContext)
+				for k := 0; k < sig.Params().Len(); k++ {
+					sigParam := sig.Params().At(k)
+					pgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+				}
+			}).ParamsFunc(func(rgroup *Group) {
+				for k := 0; k < sig.Results().Len(); k++ {
+					sigParam := sig.Results().At(k)
+					rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+				}
+			}),
+		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
+			Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
+				Id("d").Dot("impl" + mtd.Name()).Op("=").Id("impl" + mtd.Name()),
+			)),
+		)
+	}
 
 	// Write to file.
 	fmt.Printf("Writing file %s...", outputName)
