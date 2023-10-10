@@ -338,7 +338,6 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		Params(
 			Id("methodName").String(),
 			Id("implIsNil").Bool(),
-			// Id("callerSkip").Int(),
 		).
 		Params(
 			Op("*").Id(objContext),
