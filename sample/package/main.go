@@ -9,6 +9,7 @@ import (
 
 func main() {
 	reader := NewDebugReader(
+		WithDebugReaderData(15),
 		WithDebugReaderRead(func(debugCtx *DebugReaderContext, p []byte) (n int, err error) {
 			n = copy(p, []byte("test"))
 			return n, nil
@@ -16,6 +17,8 @@ func main() {
 	)
 
 	readInterface(reader)
+
+	fmt.Println(reader.Data)
 }
 
 func readInterface(r io.Reader) {
@@ -26,5 +29,5 @@ func readInterface(r io.Reader) {
 		panic(err)
 	}
 
-	fmt.Printf("%d: %v", n, b)
+	fmt.Printf("%d: %v\n", n, b)
 }

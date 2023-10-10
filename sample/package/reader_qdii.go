@@ -15,30 +15,30 @@ type DebugReaderContext struct {
 	Data       any
 }
 
-type debugReader struct {
-	execCount map[string]int
-	data      any
+type DebugReader struct {
+	Data any
 
-	implRead func(debugCtx *DebugReaderContext, p []byte) (n int, err error)
+	execCount map[string]int
+	implRead  func(debugCtx *DebugReaderContext, p []byte) (n int, err error)
 }
 
-var _ io.Reader = (*debugReader)(nil)
+var _ io.Reader = (*DebugReader)(nil)
 
-type DebugReaderOption func(*debugReader)
+type DebugReaderOption func(*DebugReader)
 
-func NewDebugReader(options ...DebugReaderOption) io.Reader {
-	ret := &debugReader{execCount: map[string]int{}}
+func NewDebugReader(options ...DebugReaderOption) *DebugReader {
+	ret := &DebugReader{execCount: map[string]int{}}
 	for _, opt := range options {
 		opt(ret)
 	}
 	return ret
 }
 
-func (d *debugReader) Read(p []byte) (n int, err error) {
+func (d *DebugReader) Read(p []byte) (n int, err error) {
 	return d.implRead(d.createContext("Read", d.implRead == nil), p)
 }
 
-func (d *debugReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
+func (d *DebugReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
 	counter, file, line, success := runtime.Caller(skip)
 	if !success {
 		panic("runtime.Caller failed")
@@ -46,29 +46,29 @@ func (d *debugReader) getCallerFuncName(skip int) (funcName string, file string,
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *debugReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
+func (d *DebugReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
 	if implIsNil {
-		panic(fmt.Errorf("[debugReader] method '%s' not implemented", methodName))
+		panic(fmt.Errorf("[DebugReader] method '%s' not implemented", methodName))
 	}
 	d.execCount[methodName]++
 	return d.execCount[methodName]
 }
 
-func (d *debugReader) createContext(methodName string, implIsNil bool) *DebugReaderContext {
+func (d *DebugReader) createContext(methodName string, implIsNil bool) *DebugReaderContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
+	return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
 }
 
 // Options
 
 func WithDebugReaderData(data any) DebugReaderOption {
-	return func(d *debugReader) {
-		d.data = data
+	return func(d *DebugReader) {
+		d.Data = data
 	}
 }
 
 func WithDebugReaderRead(implRead func(debugCtx *DebugReaderContext, p []byte) (n int, err error)) DebugReaderOption {
-	return func(d *debugReader) {
+	return func(d *DebugReader) {
 		d.implRead = implRead
 	}
 }

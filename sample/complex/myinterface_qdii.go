@@ -15,10 +15,10 @@ type DebugMyInterfaceContext struct {
 	Data       any
 }
 
-type debugMyInterface[T any, X II] struct {
-	execCount map[string]int
-	data      any
+type DebugMyInterface[T any, X II] struct {
+	DataQDII any
 
+	execCount    map[string]int
 	implData     func(debugCtx *DebugMyInterfaceContext)
 	implGet      func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)
 	implOther    func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int
@@ -27,41 +27,41 @@ type debugMyInterface[T any, X II] struct {
 	implinternal func(debugCtx *DebugMyInterfaceContext) bool
 }
 
-type DebugMyInterfaceOption[T any, X II] func(*debugMyInterface[T, X])
+type DebugMyInterfaceOption[T any, X II] func(*DebugMyInterface[T, X])
 
-func NewDebugMyInterface[T any, X II](options ...DebugMyInterfaceOption[T, X]) MyInterface[T, X] {
-	ret := &debugMyInterface[T, X]{execCount: map[string]int{}}
+func NewDebugMyInterface[T any, X II](options ...DebugMyInterfaceOption[T, X]) *DebugMyInterface[T, X] {
+	ret := &DebugMyInterface[T, X]{execCount: map[string]int{}}
 	for _, opt := range options {
 		opt(ret)
 	}
 	return ret
 }
 
-func (d *debugMyInterface[T, X]) Data() {
+func (d *DebugMyInterface[T, X]) Data() {
 	d.implData(d.createContext("Data", d.implData == nil))
 }
 
-func (d *debugMyInterface[T, X]) Get(ctx context.Context, name string) (T, error) {
+func (d *DebugMyInterface[T, X]) Get(ctx context.Context, name string) (T, error) {
 	return d.implGet(d.createContext("Get", d.implGet == nil), ctx, name)
 }
 
-func (d *debugMyInterface[T, X]) Other(si SecondInterface) int {
+func (d *DebugMyInterface[T, X]) Other(si SecondInterface) int {
 	return d.implOther(d.createContext("Other", d.implOther == nil), si)
 }
 
-func (d *debugMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
+func (d *DebugMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 	return d.implOther2(d.createContext("Other2", d.implOther2 == nil), ti)
 }
 
-func (d *debugMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
+func (d *DebugMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
 	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
 }
 
-func (d *debugMyInterface[T, X]) internal() bool {
+func (d *DebugMyInterface[T, X]) internal() bool {
 	return d.implinternal(d.createContext("internal", d.implinternal == nil))
 }
 
-func (d *debugMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file string, line int) {
+func (d *DebugMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file string, line int) {
 	counter, file, line, success := runtime.Caller(skip)
 	if !success {
 		panic("runtime.Caller failed")
@@ -69,59 +69,59 @@ func (d *debugMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, f
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *debugMyInterface[T, X]) checkCallMethod(methodName string, implIsNil bool) (count int) {
+func (d *DebugMyInterface[T, X]) checkCallMethod(methodName string, implIsNil bool) (count int) {
 	if implIsNil {
-		panic(fmt.Errorf("[debugMyInterface] method '%s' not implemented", methodName))
+		panic(fmt.Errorf("[DebugMyInterface] method '%s' not implemented", methodName))
 	}
 	d.execCount[methodName]++
 	return d.execCount[methodName]
 }
 
-func (d *debugMyInterface[T, X]) createContext(methodName string, implIsNil bool) *DebugMyInterfaceContext {
+func (d *DebugMyInterface[T, X]) createContext(methodName string, implIsNil bool) *DebugMyInterfaceContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &DebugMyInterfaceContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.data}
+	return &DebugMyInterfaceContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.DataQDII}
 }
 
 // Options
 
 func WithDebugMyInterfaceDataQDII[T any, X II](data any) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
-		d.data = data
+	return func(d *DebugMyInterface[T, X]) {
+		d.DataQDII = data
 	}
 }
 
 func WithDebugMyInterfaceData[T any, X II](implData func(debugCtx *DebugMyInterfaceContext)) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
+	return func(d *DebugMyInterface[T, X]) {
 		d.implData = implData
 	}
 }
 
 func WithDebugMyInterfaceGet[T any, X II](implGet func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
+	return func(d *DebugMyInterface[T, X]) {
 		d.implGet = implGet
 	}
 }
 
 func WithDebugMyInterfaceOther[T any, X II](implOther func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
+	return func(d *DebugMyInterface[T, X]) {
 		d.implOther = implOther
 	}
 }
 
 func WithDebugMyInterfaceOther2[T any, X II](implOther2 func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
+	return func(d *DebugMyInterface[T, X]) {
 		d.implOther2 = implOther2
 	}
 }
 
 func WithDebugMyInterfaceSet[T any, X II](implSet func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
+	return func(d *DebugMyInterface[T, X]) {
 		d.implSet = implSet
 	}
 }
 
 func WithDebugMyInterfaceinternal[T any, X II](implinternal func(debugCtx *DebugMyInterfaceContext) bool) DebugMyInterfaceOption[T, X] {
-	return func(d *debugMyInterface[T, X]) {
+	return func(d *DebugMyInterface[T, X]) {
 		d.implinternal = implinternal
 	}
 }
