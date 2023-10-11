@@ -12,11 +12,11 @@ type DebugSampleDataContext struct {
 	CallerFunc string
 	CallerFile string
 	CallerLine int
-	Data       idata.IData
+	Data       *idata.IData
 }
 
 type DebugSampleData struct {
-	Data idata.IData
+	Data *idata.IData
 
 	execCount map[string]int
 	implGet   func(debugCtx *DebugSampleDataContext, name string) (any, error)
@@ -61,7 +61,7 @@ func (d *DebugSampleData) createContext(methodName string, implIsNil bool) *Debu
 
 // Options
 
-func WithDebugSampleDataData(data idata.IData) DebugSampleDataOption {
+func WithDebugSampleDataData(data *idata.IData) DebugSampleDataOption {
 	return func(d *DebugSampleData) {
 		d.Data = data
 	}
