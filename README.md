@@ -29,7 +29,7 @@ Usage of qdiimpl:
         qdiimpl [flags] -type T [directory]
 Flags:
   -data-type string
-        data member type (e.g.: package.com/data.XData) (default "any")
+        add a data member of this type (e.g.: `any`, `package.com/data.XData`)
   -force-package string
         force package name
   -name-prefix string
@@ -75,12 +75,9 @@ type DebugReaderContext struct {
     CallerFunc string
     CallerFile string
     CallerLine int
-    Data       any
 }
 
 type DebugReader struct {
-    Data any
-
     execCount map[string]int
     implRead  func(debugCtx *DebugReaderContext, p []byte) (n int, err error)
 }
@@ -119,16 +116,10 @@ func (d *DebugReader) checkCallMethod(methodName string, implIsNil bool) (count 
 
 func (d *DebugReader) createContext(methodName string, implIsNil bool) *DebugReaderContext {
     callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-    return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
+    return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
 }
 
 // Options
-
-func WithDebugReaderData(data any) DebugReaderOption {
-    return func(d *DebugReader) {
-        d.Data = data
-    }
-}
 
 func WithDebugReaderRead(implRead func(debugCtx *DebugReaderContext, p []byte) (n int, err error)) DebugReaderOption {
     return func(d *DebugReader) {
@@ -173,7 +164,7 @@ Each method is passed a "DebugContext" which contains these fields:
 - `CallerFunc`: fully-qualified function name that called the interface method.
 - `CallerFile`: source file name of the function that called the interface method.
 - `CallerLine`: line number of the source file of the function that called the interface method.
-- `Data`: a custom data field set by `WithDebugTYPEData` option.
+- `Data`: a custom data field set by `WithDebugTYPEData` option. (only when `data-type` command line parameter is set)
 
 Use these properties to help detect where the method was called from and return different responses if needed.
 

@@ -12,12 +12,9 @@ type DebugReaderContext struct {
 	CallerFunc string
 	CallerFile string
 	CallerLine int
-	Data       any
 }
 
 type DebugReader struct {
-	Data any
-
 	execCount map[string]int
 	implRead  func(debugCtx *DebugReaderContext, p []byte) (n int, err error)
 }
@@ -56,16 +53,10 @@ func (d *DebugReader) checkCallMethod(methodName string, implIsNil bool) (count 
 
 func (d *DebugReader) createContext(methodName string, implIsNil bool) *DebugReaderContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
+	return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
 }
 
 // Options
-
-func WithDebugReaderData(data any) DebugReaderOption {
-	return func(d *DebugReader) {
-		d.Data = data
-	}
-}
 
 func WithDebugReaderRead(implRead func(debugCtx *DebugReaderContext, p []byte) (n int, err error)) DebugReaderOption {
 	return func(d *DebugReader) {

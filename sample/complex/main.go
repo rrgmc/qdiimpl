@@ -11,6 +11,8 @@ type IIImpl struct {
 func (I IIImpl) Setme() {
 }
 
+// -type=MyInterface -data-type=any -overwrite=true
+
 func main() {
 	data := 12
 

@@ -20,7 +20,7 @@ var (
 	samePackage      = flag.Bool("same-package", true, "output package should be the same as the source")
 	namePrefix       = flag.String("name-prefix", "debug", "interface name prefix")
 	nameSuffix       = flag.String("name-suffix", "", "interface name suffix (default blank)")
-	dataType         = flag.String("data-type", "any", "data member type (e.g.: package.com/data.XData)")
+	dataType         = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
 	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
@@ -122,9 +122,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
-	codeDataType, err := typeNameCode(*dataType)
-	if err != nil {
-		return err
+	var err error
+	var codeDataType *Statement
+	if *dataType != "" {
+		codeDataType, err = typeNameCode(*dataType)
+		if err != nil {
+			return err
+		}
 	}
 
 	dataParamName := getUniqueName("Data", func(nameExists string) bool {
@@ -143,13 +147,15 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// Debug Context
 	// # type DebugTYPEContext struct {}
 	f.Type().Id(objContext).
-		Struct(
-			Id("ExecCount").Int(),
-			Id("CallerFunc").String(),
-			Id("CallerFile").String(),
-			Id("CallerLine").Int(),
-			Id("Data").Add(codeDataType),
-		)
+		StructFunc(func(sgroup *Group) {
+			sgroup.Id("ExecCount").Int()
+			sgroup.Id("CallerFunc").String()
+			sgroup.Id("CallerFile").String()
+			sgroup.Id("CallerLine").Int()
+			if codeDataType != nil {
+				sgroup.Id("Data").Add(codeDataType)
+			}
+		})
 	f.Line()
 
 	// Struct implementation
@@ -162,8 +168,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 		}).
 		StructFunc(func(group *Group) {
-			group.Id(dataParamName).Add(codeDataType)
-			group.Line()
+			if codeDataType != nil {
+				group.Id(dataParamName).Add(codeDataType)
+				group.Line()
+			}
 			group.Id("execCount").Map(String()).Int()
 
 			// interface method impls
@@ -337,29 +345,33 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			List(Id("callerFunc"), Id("callerFile"), Id("callerLine")).Op(":=").
 				Id("d").Dot("getCallerFuncName").Call(Lit(3)),
 			Return(
-				Op("&").Id(objContext).Values(
-					Id("ExecCount").Op(":").Id("d").
-						Dot("checkCallMethod").Call(Id("methodName"), Id("implIsNil")),
-					Id("CallerFunc").Op(":").Id("callerFunc"),
-					Id("CallerFile").Op(":").Id("callerFile"),
-					Id("CallerLine").Op(":").Id("callerLine"),
-					Id("Data").Op(":").Id("d").Dot(dataParamName),
-				)),
+				Op("&").Id(objContext).ValuesFunc(func(vgroup *Group) {
+					vgroup.Id("ExecCount").Op(":").Id("d").
+						Dot("checkCallMethod").Call(Id("methodName"), Id("implIsNil"))
+					vgroup.Id("CallerFunc").Op(":").Id("callerFunc")
+					vgroup.Id("CallerFile").Op(":").Id("callerFile")
+					vgroup.Id("CallerLine").Op(":").Id("callerLine")
+					if codeDataType != nil {
+						vgroup.Id("Data").Op(":").Id("d").Dot(dataParamName)
+					}
+				})),
 		)
 
 	f.Line()
 	f.Comment("Options")
 	f.Line()
 
-	// WithData option
-	// # func WithDebugTYPEData(data any) DebugTYPEOption {}
-	f.Func().Id("With" + objName + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
-		Id("data").Add(codeDataType),
-	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
-		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
-			Id("d").Dot(dataParamName).Op("=").Id("data"),
-		)),
-	)
+	if codeDataType != nil {
+		// WithData option
+		// # func WithDebugTYPEData(data any) DebugTYPEOption {}
+		f.Func().Id("With" + objName + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
+			Id("data").Add(codeDataType),
+		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
+			Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
+				Id("d").Dot(dataParamName).Op("=").Id("data"),
+			)),
+		)
+	}
 
 	// method options
 	for j := 0; j < iface.NumMethods(); j++ {
