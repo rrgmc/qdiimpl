@@ -12,22 +12,23 @@ func getQualCode(typ types.Type) *jen.Statement {
 	var st jen.Statement
 	for {
 		switch tt := typ.(type) {
-		case *types.Named:
-			if tt.Obj().Pkg() != nil {
-				return st.Add(jen.Qual(tt.Obj().Pkg().Path(), tt.Obj().Name()).TypesFunc(addTypeList(tt.TypeArgs())))
-			}
-			return st.Add(jen.Id(tt.Obj().Name()).TypesFunc(addTypeList(tt.TypeArgs())))
-		case *types.Interface:
-			return st.Add(jen.Id(tt.String()))
 		case *types.Basic:
 			return st.Add(jen.Id(tt.Name()))
-		case *types.TypeParam:
-			return st.Add(jen.Id(tt.Obj().Name()))
+		case *types.Array:
+			return st.Add(jen.Index(jen.Lit(tt.Len())).Add(getQualCode(tt.Elem())))
+		case *types.Slice:
+			return st.Add(jen.Index().Add(getQualCode(tt.Elem())))
 		case *types.Pointer:
 			st.Add(jen.Op("*"))
 			typ = tt.Elem()
-		case *types.Slice:
-			return st.Add(jen.Index().Add(getQualCode(tt.Elem())))
+		case *types.Tuple:
+			var items jen.Statement
+			for i := 0; i < tt.Len(); i++ {
+				items.Add(jen.Id(tt.At(i).Name()).Add(getQualCode(tt.At(i).Type())))
+			}
+			return st.Add(jen.Params(items...))
+		case *types.Interface:
+			return st.Add(jen.Id(tt.String()))
 		case *types.Map:
 			return st.Add(jen.Map(getQualCode(tt.Key())).Add(getQualCode(tt.Elem())))
 		case *types.Chan:
@@ -43,6 +44,13 @@ func getQualCode(typ types.Type) *jen.Statement {
 				panic("unknown channel direction")
 			}
 			return st.Add(chanDesc.Add(getQualCode(tt.Elem())))
+		case *types.Named:
+			if tt.Obj().Pkg() != nil {
+				return st.Add(jen.Qual(tt.Obj().Pkg().Path(), tt.Obj().Name()).TypesFunc(addTypeList(tt.TypeArgs())))
+			}
+			return st.Add(jen.Id(tt.Obj().Name()).TypesFunc(addTypeList(tt.TypeArgs())))
+		case *types.TypeParam:
+			return st.Add(jen.Id(tt.Obj().Name()))
 		default:
 			panic(fmt.Errorf("unknown type %T", typ))
 		}

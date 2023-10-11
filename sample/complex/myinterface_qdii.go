@@ -26,6 +26,7 @@ type DebugMyInterface[T any, X II] struct {
 	implOther2      func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int
 	implSet         func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error
 	implUnnamed     func(debugCtx *DebugMyInterfaceContext, p0 bool, p1 string)
+	implXGet        func(debugCtx *DebugMyInterfaceContext, ss *SI) *SI
 	implinternal    func(debugCtx *DebugMyInterfaceContext) bool
 }
 
@@ -65,6 +66,10 @@ func (d *DebugMyInterface[T, X]) Set(ctx context.Context, name string, value T) 
 
 func (d *DebugMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
 	d.implUnnamed(d.createContext("Unnamed", d.implUnnamed == nil), p0, p1)
+}
+
+func (d *DebugMyInterface[T, X]) XGet(ss *SI) *SI {
+	return d.implXGet(d.createContext("XGet", d.implXGet == nil), ss)
 }
 
 func (d *DebugMyInterface[T, X]) internal() bool {
@@ -139,6 +144,12 @@ func WithDebugMyInterfaceSet[T any, X II](implSet func(debugCtx *DebugMyInterfac
 func WithDebugMyInterfaceUnnamed[T any, X II](implUnnamed func(debugCtx *DebugMyInterfaceContext, p0 bool, p1 string)) DebugMyInterfaceOption[T, X] {
 	return func(d *DebugMyInterface[T, X]) {
 		d.implUnnamed = implUnnamed
+	}
+}
+
+func WithDebugMyInterfaceXGet[T any, X II](implXGet func(debugCtx *DebugMyInterfaceContext, ss *SI) *SI) DebugMyInterfaceOption[T, X] {
+	return func(d *DebugMyInterface[T, X]) {
+		d.implXGet = implXGet
 	}
 }
 

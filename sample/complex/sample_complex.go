@@ -6,6 +6,10 @@ type II interface {
 	Setme()
 }
 
+type SI struct {
+	A int
+}
+
 type MyInterface[T any, X II] interface {
 	Get(ctx context.Context, name string) (T, error)
 	Set(ctx context.Context, name string, value T) error
@@ -15,6 +19,7 @@ type MyInterface[T any, X II] interface {
 	internal() bool
 	CloseNotify() <-chan bool
 	Unnamed(bool, string)
+	XGet(ss *SI) *SI
 }
 
 type SecondInterface interface {
