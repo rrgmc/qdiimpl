@@ -36,6 +36,7 @@ func NewQDSampleData(options ...QDSampleDataOption) *QDSampleData {
 	return ret
 }
 
+// Get implements [github.com/RangelReale/qdiimpl/sample/datatype.SampleData.Get]
 func (d *QDSampleData) Get(name string) (any, error) {
 	return d.implGet(d.createContext("Get", d.implGet == nil), name)
 }

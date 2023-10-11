@@ -253,6 +253,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		sig := mtd.Type().(*types.Signature)
 
 		// # func (d *debugTYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
+		f.Commentf("%s implements [%s.%s].", mtd.Name(), formatObjetName(obj), mtd.Name())
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
 				sigParam := sig.Params().At(k)
@@ -388,6 +389,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Line()
 
 		// # func WithQDTYPEMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
+		f.Commentf("With%s%s implements [%s.%s].", objName, mtd.Name(), formatObjetName(obj), mtd.Name())
 		f.Func().Id("With" + objName + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add debug context parameter

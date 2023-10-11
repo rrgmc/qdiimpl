@@ -42,38 +42,47 @@ func NewQDMyInterface[T any, X II](options ...QDMyInterfaceOption[T, X]) *QDMyIn
 	return ret
 }
 
+// CloseNotify implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.CloseNotify]
 func (d *QDMyInterface[T, X]) CloseNotify() <-chan bool {
 	return d.implCloseNotify(d.createContext("CloseNotify", d.implCloseNotify == nil))
 }
 
+// Data implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Data]
 func (d *QDMyInterface[T, X]) Data() {
 	d.implData(d.createContext("Data", d.implData == nil))
 }
 
+// Get implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Get]
 func (d *QDMyInterface[T, X]) Get(ctx context.Context, name string) (T, error) {
 	return d.implGet(d.createContext("Get", d.implGet == nil), ctx, name)
 }
 
+// Other implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Other]
 func (d *QDMyInterface[T, X]) Other(si SecondInterface) int {
 	return d.implOther(d.createContext("Other", d.implOther == nil), si)
 }
 
+// Other2 implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Other2]
 func (d *QDMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 	return d.implOther2(d.createContext("Other2", d.implOther2 == nil), ti)
 }
 
+// Set implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Set]
 func (d *QDMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
 	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
 }
 
+// Unnamed implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Unnamed]
 func (d *QDMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
 	d.implUnnamed(d.createContext("Unnamed", d.implUnnamed == nil), p0, p1)
 }
 
+// XGet implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.XGet]
 func (d *QDMyInterface[T, X]) XGet(ss *SI) *SI {
 	return d.implXGet(d.createContext("XGet", d.implXGet == nil), ss)
 }
 
+// internal implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.internal]
 func (d *QDMyInterface[T, X]) internal() bool {
 	return d.implinternal(d.createContext("internal", d.implinternal == nil))
 }
