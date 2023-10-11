@@ -15,7 +15,7 @@ import (
 
 var (
 	typeName         = flag.String("type", "", "type name; must be set")
-	packageName      = flag.String("package", "", "package name; if not set, use package from dir")
+	packageName      = flag.String("package", "", "package name if not the current directory")
 	forcePackageName = flag.String("force-package", "", "force package name")
 	samePackage      = flag.Bool("same-package", true, "output package should be the same as the source")
 	namePrefix       = flag.String("name-prefix", "debug", "interface name prefix")

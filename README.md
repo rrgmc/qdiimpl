@@ -41,7 +41,7 @@ Flags:
   -overwrite
         overwrite file if exists
   -package string
-        package name; if not set, use package from dir
+        package name if not the current directory
   -same-package
         output package should be the same as the source (default true)
   -tags string
