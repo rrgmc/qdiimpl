@@ -173,7 +173,7 @@ Each method is passed a "DebugContext" which contains these fields:
 - `CallerLine`: line number of the source file of the function that called the interface method.
 - `Data`: a custom data field set by `WithDebugTYPEData` option.
 
-Use these properties to help detect where from the method was called from and return different responses if needed.
+Use these properties to help detect where the method was called from and return different responses if needed.
 
 # Author
 
