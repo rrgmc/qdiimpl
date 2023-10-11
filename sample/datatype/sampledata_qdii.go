@@ -19,7 +19,7 @@ type QDSampleData struct {
 	Data *idata.IData
 
 	execCount map[string]int
-	implGet   func(debugCtx *QDSampleDataContext, name string) (any, error)
+	implGet   func(qdCtx *QDSampleDataContext, name string) (any, error)
 }
 
 var _ SampleData = (*QDSampleData)(nil)
@@ -67,7 +67,7 @@ func WithQDSampleDataData(data *idata.IData) QDSampleDataOption {
 	}
 }
 
-func WithQDSampleDataGet(implGet func(debugCtx *QDSampleDataContext, name string) (any, error)) QDSampleDataOption {
+func WithQDSampleDataGet(implGet func(qdCtx *QDSampleDataContext, name string) (any, error)) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.implGet = implGet
 	}

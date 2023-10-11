@@ -12,9 +12,9 @@ import (
 func main() {
 	d := NewQDSampleData(
 		WithQDSampleDataData(&idata.IData{Name: "xname", Value: "xvalue"}),
-		WithQDSampleDataGet(func(debugCtx *QDSampleDataContext, name string) (any, error) {
-			if name == debugCtx.Data.Name {
-				return debugCtx.Data.Value, nil
+		WithQDSampleDataGet(func(qdCtx *QDSampleDataContext, name string) (any, error) {
+			if name == qdCtx.Data.Name {
+				return qdCtx.Data.Value, nil
 			}
 			return nil, errors.New("not found")
 		}),

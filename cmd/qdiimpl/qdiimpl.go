@@ -179,10 +179,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				mtd := iface.Method(j)
 				sig := mtd.Type().(*types.Signature)
 
-				// # implMETHOD  func(debugCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)
+				// # implMETHOD  func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)
 				group.Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 					// add debug context parameter
-					debugCtxName := getUniqueName("debugCtx", func(nameExists string) bool {
+					qdCtxName := getUniqueName("qdCtx", func(nameExists string) bool {
 						for k := 0; k < sig.Params().Len(); k++ {
 							if sig.Params().At(k).Name() == nameExists {
 								return true
@@ -190,7 +190,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 						}
 						return false
 					})
-					pgroup.Id(debugCtxName).Op("*").Id(objContext)
+					pgroup.Id(qdCtxName).Op("*").Id(objContext)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
 						pgroup.Id(paramName(k, sigParam)).Add(getQualCode(sigParam.Type()))
@@ -380,11 +380,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 		f.Line()
 
-		// # func WithQDTYPEMETHOD(implMETHOD func(debugCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
+		// # func WithQDTYPEMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
 		f.Func().Id("With" + objName + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add debug context parameter
-				debugCtxName := getUniqueName("debugCtx", func(nameExists string) bool {
+				qdCtxName := getUniqueName("qdCtx", func(nameExists string) bool {
 					for k := 0; k < sig.Params().Len(); k++ {
 						if sig.Params().At(k).Name() == nameExists {
 							return true
@@ -392,7 +392,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					}
 					return false
 				})
-				pgroup.Id(debugCtxName).Op("*").Id(objContext)
+				pgroup.Id(qdCtxName).Op("*").Id(objContext)
 				for k := 0; k < sig.Params().Len(); k++ {
 					sigParam := sig.Params().At(k)
 					pgroup.Id(paramName(k, sigParam)).Add(getQualCode(sigParam.Type()))

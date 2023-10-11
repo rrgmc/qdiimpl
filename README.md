@@ -79,7 +79,7 @@ type QDReaderContext struct {
 
 type QDReader struct {
     execCount map[string]int
-    implRead  func(debugCtx *QDReaderContext, p []byte) (n int, err error)
+    implRead  func(qdCtx *QDReaderContext, p []byte) (n int, err error)
 }
 
 var _ io.Reader = (*QDReader)(nil)
@@ -121,7 +121,7 @@ func (d *QDReader) createContext(methodName string, implIsNil bool) *QDReaderCon
 
 // Options
 
-func WithQDReaderRead(implRead func(debugCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
+func WithQDReaderRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
     return func(d *QDReader) {
         d.implRead = implRead
     }
@@ -133,7 +133,7 @@ Usage:
 ```go
 func main() {
     reader := NewDebugReader(
-        WithDebugReaderRead(func(debugCtx *DebugReaderContext, p []byte) (n int, err error) {
+        WithDebugReaderRead(func(qdCtx *DebugReaderContext, p []byte) (n int, err error) {
             n = copy(p, []byte("test"))
             return n, nil
         }),

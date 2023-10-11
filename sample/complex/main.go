@@ -18,8 +18,8 @@ func main() {
 
 	x := NewQDMyInterface[string, IIImpl](
 		WithQDMyInterfaceDataQDII[string, IIImpl](&data),
-		WithQDMyInterfaceGet[string, IIImpl](func(debugCtx *QDMyInterfaceContext, ctx context.Context, name string) (string, error) {
-			d := debugCtx.Data.(*int)
+		WithQDMyInterfaceGet[string, IIImpl](func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (string, error) {
+			d := qdCtx.Data.(*int)
 			*d++
 			return fmt.Sprintf("a%v", *d), nil
 		}),

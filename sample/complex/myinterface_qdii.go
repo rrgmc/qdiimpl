@@ -19,15 +19,15 @@ type QDMyInterface[T any, X II] struct {
 	DataQDII any
 
 	execCount       map[string]int
-	implCloseNotify func(debugCtx *QDMyInterfaceContext) <-chan bool
-	implData        func(debugCtx *QDMyInterfaceContext)
-	implGet         func(debugCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)
-	implOther       func(debugCtx *QDMyInterfaceContext, si SecondInterface) int
-	implOther2      func(debugCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int
-	implSet         func(debugCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
-	implUnnamed     func(debugCtx *QDMyInterfaceContext, p0 bool, p1 string)
-	implXGet        func(debugCtx *QDMyInterfaceContext, ss *SI) *SI
-	implinternal    func(debugCtx *QDMyInterfaceContext) bool
+	implCloseNotify func(qdCtx *QDMyInterfaceContext) <-chan bool
+	implData        func(qdCtx *QDMyInterfaceContext)
+	implGet         func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)
+	implOther       func(qdCtx *QDMyInterfaceContext, si SecondInterface) int
+	implOther2      func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int
+	implSet         func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
+	implUnnamed     func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)
+	implXGet        func(qdCtx *QDMyInterfaceContext, ss *SI) *SI
+	implinternal    func(qdCtx *QDMyInterfaceContext) bool
 }
 
 type QDMyInterfaceOption[T any, X II] func(*QDMyInterface[T, X])
@@ -105,55 +105,55 @@ func WithQDMyInterfaceDataQDII[T any, X II](data any) QDMyInterfaceOption[T, X] 
 	}
 }
 
-func WithQDMyInterfaceCloseNotify[T any, X II](implCloseNotify func(debugCtx *QDMyInterfaceContext) <-chan bool) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceCloseNotify[T any, X II](implCloseNotify func(qdCtx *QDMyInterfaceContext) <-chan bool) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implCloseNotify = implCloseNotify
 	}
 }
 
-func WithQDMyInterfaceData[T any, X II](implData func(debugCtx *QDMyInterfaceContext)) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceData[T any, X II](implData func(qdCtx *QDMyInterfaceContext)) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implData = implData
 	}
 }
 
-func WithQDMyInterfaceGet[T any, X II](implGet func(debugCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceGet[T any, X II](implGet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implGet = implGet
 	}
 }
 
-func WithQDMyInterfaceOther[T any, X II](implOther func(debugCtx *QDMyInterfaceContext, si SecondInterface) int) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceOther[T any, X II](implOther func(qdCtx *QDMyInterfaceContext, si SecondInterface) int) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implOther = implOther
 	}
 }
 
-func WithQDMyInterfaceOther2[T any, X II](implOther2 func(debugCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceOther2[T any, X II](implOther2 func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implOther2 = implOther2
 	}
 }
 
-func WithQDMyInterfaceSet[T any, X II](implSet func(debugCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceSet[T any, X II](implSet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implSet = implSet
 	}
 }
 
-func WithQDMyInterfaceUnnamed[T any, X II](implUnnamed func(debugCtx *QDMyInterfaceContext, p0 bool, p1 string)) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceUnnamed[T any, X II](implUnnamed func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implUnnamed = implUnnamed
 	}
 }
 
-func WithQDMyInterfaceXGet[T any, X II](implXGet func(debugCtx *QDMyInterfaceContext, ss *SI) *SI) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceXGet[T any, X II](implXGet func(qdCtx *QDMyInterfaceContext, ss *SI) *SI) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implXGet = implXGet
 	}
 }
 
-func WithQDMyInterfaceinternal[T any, X II](implinternal func(debugCtx *QDMyInterfaceContext) bool) QDMyInterfaceOption[T, X] {
+func WithQDMyInterfaceinternal[T any, X II](implinternal func(qdCtx *QDMyInterfaceContext) bool) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implinternal = implinternal
 	}

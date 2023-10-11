@@ -9,7 +9,7 @@ import (
 
 func main() {
 	reader := NewQDReader(
-		WithQDReaderRead(func(debugCtx *QDReaderContext, p []byte) (n int, err error) {
+		WithQDReaderRead(func(qdCtx *QDReaderContext, p []byte) (n int, err error) {
 			n = copy(p, []byte("test"))
 			return n, nil
 		}),
