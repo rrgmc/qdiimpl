@@ -34,8 +34,8 @@ message.
 Usage of qdiimpl:
         qdiimpl [flags] -type T [directory]
 Flags:
-  -data-type string
-        add a data member of this type (e.g.: `any`, `package.com/data.XData`)
+  -data-type any
+        add a data member of this type (e.g.: any, `package.com/data.XData`)
   -force-package string
         force package name
   -name-prefix string
@@ -50,6 +50,8 @@ Flags:
         package name if not the current directory
   -same-package
         output package should be the same as the source (default true)
+  -sync
+        use mutex to prevent concurrent accesses (default true)
   -tags string
         comma-separated list of build tags to apply
   -type string
