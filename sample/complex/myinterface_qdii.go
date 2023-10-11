@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 )
 
 type QDMyInterfaceContext struct {
@@ -18,6 +19,7 @@ type QDMyInterfaceContext struct {
 type QDMyInterface[T any, X II] struct {
 	DataQDII any
 
+	lock            sync.Mutex
 	execCount       map[string]int
 	implCloseNotify func(qdCtx *QDMyInterfaceContext) <-chan bool
 	implData        func(qdCtx *QDMyInterfaceContext)
@@ -88,6 +90,8 @@ func (d *QDMyInterface[T, X]) checkCallMethod(methodName string, implIsNil bool)
 	if implIsNil {
 		panic(fmt.Errorf("[QDMyInterface] method '%s' not implemented", methodName))
 	}
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.execCount[methodName]++
 	return d.execCount[methodName]
 }

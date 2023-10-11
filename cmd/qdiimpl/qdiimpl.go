@@ -23,6 +23,7 @@ var (
 	dataType         = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
 	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
+	doSync           = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
 )
 
@@ -172,6 +173,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				group.Id(dataParamName).Add(codeDataType)
 				group.Line()
 			}
+			if *doSync {
+				group.Id("lock").Qual("sync", "Mutex")
+			}
 			group.Id("execCount").Map(String()).Int()
 
 			// interface method impls
@@ -319,14 +323,17 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		Params(
 			Id("count").Int(),
 		).
-		Block(
-			If(Id("implIsNil")).Block(
+		BlockFunc(func(bgroup *Group) {
+			bgroup.If(Id("implIsNil")).Block(
 				Panic(Qual("fmt", "Errorf").
 					Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))),
-			),
-			Id("d").Dot("execCount").Index(Id("methodName")).Op("++"),
-			Return(Id("d").Dot("execCount").Index(Id("methodName"))),
-		)
+			)
+			bgroup.Id("d").Dot("lock").Dot("Lock").Call()
+			bgroup.Defer().Id("d").Dot("lock").Dot("Unlock").Call()
+
+			bgroup.Id("d").Dot("execCount").Index(Id("methodName")).Op("++")
+			bgroup.Return(Id("d").Dot("execCount").Index(Id("methodName")))
+		})
 
 	f.Line()
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	idata "github.com/RangelReale/qdiimpl/sample/datatype/idata"
 	"runtime"
+	"sync"
 )
 
 type QDSampleDataContext struct {
@@ -18,6 +19,7 @@ type QDSampleDataContext struct {
 type QDSampleData struct {
 	Data *idata.IData
 
+	lock      sync.Mutex
 	execCount map[string]int
 	implGet   func(qdCtx *QDSampleDataContext, name string) (any, error)
 }
@@ -50,6 +52,8 @@ func (d *QDSampleData) checkCallMethod(methodName string, implIsNil bool) (count
 	if implIsNil {
 		panic(fmt.Errorf("[QDSampleData] method '%s' not implemented", methodName))
 	}
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.execCount[methodName]++
 	return d.execCount[methodName]
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"sync"
 )
 
 type QDReaderContext struct {
@@ -15,6 +16,7 @@ type QDReaderContext struct {
 }
 
 type QDReader struct {
+	lock      sync.Mutex
 	execCount map[string]int
 	implRead  func(qdCtx *QDReaderContext, p []byte) (n int, err error)
 }
@@ -47,6 +49,8 @@ func (d *QDReader) checkCallMethod(methodName string, implIsNil bool) (count int
 	if implIsNil {
 		panic(fmt.Errorf("[QDReader] method '%s' not implemented", methodName))
 	}
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.execCount[methodName]++
 	return d.execCount[methodName]
 }
