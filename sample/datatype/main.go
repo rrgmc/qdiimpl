@@ -7,7 +7,7 @@ import (
 	"github.com/RangelReale/qdiimpl/sample/datatype/idata"
 )
 
-// -type=SampleData -data="*github.com/RangelReale/qdiimpl/sample/datatype/idata.IData" -overwrite=true
+// -type=SampleData -data-type="*github.com/RangelReale/qdiimpl/sample/datatype/idata.IData" -overwrite=true
 
 func main() {
 	d := NewDebugSampleData(

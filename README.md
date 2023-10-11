@@ -28,14 +28,16 @@ message.
 Usage of qdiimpl:
         qdiimpl [flags] -type T [directory]
 Flags:
+  -data-type string
+        data member type (e.g.: package.com/data.XData) (default "any")
   -force-package string
         force package name
   -name-prefix string
-        interface name prefix; default is 'debug' (default "debug")
+        interface name prefix (default "debug")
   -name-suffix string
-        interface name suffix; default is blank
+        interface name suffix (default blank)
   -output string
-        output file name; default srcdir/<type>_qdiimpl.go
+        output file name; default srcdir/<type>_qdii.go
   -overwrite
         overwrite file if exists
   -package string
