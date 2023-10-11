@@ -1,6 +1,6 @@
 module github.com/RangelReale/qdiimpl
 
-go 1.21.1
+go 1.21
 
 require (
 	github.com/dave/jennifer v1.7.0
