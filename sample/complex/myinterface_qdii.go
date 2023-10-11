@@ -19,12 +19,13 @@ type DebugMyInterface[T any, X II] struct {
 	DataQDII any
 
 	execCount       map[string]int
-	implCloseNotify func(debugCtx *DebugMyInterfaceContext, c chan bool)
+	implCloseNotify func(debugCtx *DebugMyInterfaceContext) <-chan bool
 	implData        func(debugCtx *DebugMyInterfaceContext)
 	implGet         func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)
 	implOther       func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int
 	implOther2      func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int
 	implSet         func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error
+	implUnnamed     func(debugCtx *DebugMyInterfaceContext, p0 bool, p1 string)
 	implinternal    func(debugCtx *DebugMyInterfaceContext) bool
 }
 
@@ -38,8 +39,8 @@ func NewDebugMyInterface[T any, X II](options ...DebugMyInterfaceOption[T, X]) *
 	return ret
 }
 
-func (d *DebugMyInterface[T, X]) CloseNotify(c chan bool) {
-	d.implCloseNotify(d.createContext("CloseNotify", d.implCloseNotify == nil), c)
+func (d *DebugMyInterface[T, X]) CloseNotify() <-chan bool {
+	return d.implCloseNotify(d.createContext("CloseNotify", d.implCloseNotify == nil))
 }
 
 func (d *DebugMyInterface[T, X]) Data() {
@@ -60,6 +61,10 @@ func (d *DebugMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 
 func (d *DebugMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
 	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
+}
+
+func (d *DebugMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
+	d.implUnnamed(d.createContext("Unnamed", d.implUnnamed == nil), p0, p1)
 }
 
 func (d *DebugMyInterface[T, X]) internal() bool {
@@ -95,7 +100,7 @@ func WithDebugMyInterfaceDataQDII[T any, X II](data any) DebugMyInterfaceOption[
 	}
 }
 
-func WithDebugMyInterfaceCloseNotify[T any, X II](implCloseNotify func(debugCtx *DebugMyInterfaceContext, c chan bool)) DebugMyInterfaceOption[T, X] {
+func WithDebugMyInterfaceCloseNotify[T any, X II](implCloseNotify func(debugCtx *DebugMyInterfaceContext) <-chan bool) DebugMyInterfaceOption[T, X] {
 	return func(d *DebugMyInterface[T, X]) {
 		d.implCloseNotify = implCloseNotify
 	}
@@ -128,6 +133,12 @@ func WithDebugMyInterfaceOther2[T any, X II](implOther2 func(debugCtx *DebugMyIn
 func WithDebugMyInterfaceSet[T any, X II](implSet func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error) DebugMyInterfaceOption[T, X] {
 	return func(d *DebugMyInterface[T, X]) {
 		d.implSet = implSet
+	}
+}
+
+func WithDebugMyInterfaceUnnamed[T any, X II](implUnnamed func(debugCtx *DebugMyInterfaceContext, p0 bool, p1 string)) DebugMyInterfaceOption[T, X] {
+	return func(d *DebugMyInterface[T, X]) {
+		d.implUnnamed = implUnnamed
 	}
 }
 
