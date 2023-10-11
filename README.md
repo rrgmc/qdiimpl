@@ -132,8 +132,8 @@ Usage:
 
 ```go
 func main() {
-    reader := NewDebugReader(
-        WithDebugReaderRead(func(qdCtx *DebugReaderContext, p []byte) (n int, err error) {
+    reader := NewQDReader(
+        WithQDReaderRead(func(qdCtx *QDReaderContext, p []byte) (n int, err error) {
             n = copy(p, []byte("test"))
             return n, nil
         }),
@@ -150,7 +150,7 @@ func readInterface(r io.Reader) {
         panic(err)
     }
 
-    fmt.Printf("%d: %v", n, b)
+    fmt.Printf("%d: %v\n", n, b)
 }
 ```
 
