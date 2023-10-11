@@ -8,8 +8,8 @@ import (
 // -type=Reader -package=io -overwrite=true -force-package=main
 
 func main() {
-	reader := NewDebugReader(
-		WithDebugReaderRead(func(debugCtx *DebugReaderContext, p []byte) (n int, err error) {
+	reader := NewQDReader(
+		WithQDReaderRead(func(debugCtx *QDReaderContext, p []byte) (n int, err error) {
 			n = copy(p, []byte("test"))
 			return n, nil
 		}),

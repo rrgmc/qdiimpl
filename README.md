@@ -33,7 +33,7 @@ Flags:
   -force-package string
         force package name
   -name-prefix string
-        interface name prefix (default "debug")
+        interface name prefix (default "QD")
   -name-suffix string
         interface name suffix (default blank)
   -output string
@@ -70,35 +70,35 @@ import (
     "runtime"
 )
 
-type DebugReaderContext struct {
+type QDReaderContext struct {
     ExecCount  int
     CallerFunc string
     CallerFile string
     CallerLine int
 }
 
-type DebugReader struct {
+type QDReader struct {
     execCount map[string]int
-    implRead  func(debugCtx *DebugReaderContext, p []byte) (n int, err error)
+    implRead  func(debugCtx *QDReaderContext, p []byte) (n int, err error)
 }
 
-var _ io.Reader = (*DebugReader)(nil)
+var _ io.Reader = (*QDReader)(nil)
 
-type DebugReaderOption func(*DebugReader)
+type QDReaderOption func(*QDReader)
 
-func NewDebugReader(options ...DebugReaderOption) *DebugReader {
-    ret := &DebugReader{execCount: map[string]int{}}
+func NewQDReader(options ...QDReaderOption) *QDReader {
+    ret := &QDReader{execCount: map[string]int{}}
     for _, opt := range options {
         opt(ret)
     }
     return ret
 }
 
-func (d *DebugReader) Read(p []byte) (n int, err error) {
+func (d *QDReader) Read(p []byte) (n int, err error) {
     return d.implRead(d.createContext("Read", d.implRead == nil), p)
 }
 
-func (d *DebugReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
+func (d *QDReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
     counter, file, line, success := runtime.Caller(skip)
     if !success {
         panic("runtime.Caller failed")
@@ -106,23 +106,23 @@ func (d *DebugReader) getCallerFuncName(skip int) (funcName string, file string,
     return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *DebugReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
+func (d *QDReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
     if implIsNil {
-        panic(fmt.Errorf("[DebugReader] method '%s' not implemented", methodName))
+        panic(fmt.Errorf("[QDReader] method '%s' not implemented", methodName))
     }
     d.execCount[methodName]++
     return d.execCount[methodName]
 }
 
-func (d *DebugReader) createContext(methodName string, implIsNil bool) *DebugReaderContext {
+func (d *QDReader) createContext(methodName string, implIsNil bool) *QDReaderContext {
     callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-    return &DebugReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
+    return &QDReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
 }
 
 // Options
 
-func WithDebugReaderRead(implRead func(debugCtx *DebugReaderContext, p []byte) (n int, err error)) DebugReaderOption {
-    return func(d *DebugReader) {
+func WithQDReaderRead(implRead func(debugCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
+    return func(d *QDReader) {
         d.implRead = implRead
     }
 }
@@ -156,9 +156,9 @@ func readInterface(r io.Reader) {
 
 # Details
 
-### Debug Context
+### QD Context
 
-Each method is passed a "DebugContext" which contains these fields:
+Each method is passed a "QDContext" which contains these fields:
 
 - `ExecCount`: times this method was called since the execution start.
 - `CallerFunc`: fully-qualified function name that called the interface method.

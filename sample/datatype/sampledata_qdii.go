@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-type DebugSampleDataContext struct {
+type QDSampleDataContext struct {
 	ExecCount  int
 	CallerFunc string
 	CallerFile string
@@ -15,30 +15,30 @@ type DebugSampleDataContext struct {
 	Data       *idata.IData
 }
 
-type DebugSampleData struct {
+type QDSampleData struct {
 	Data *idata.IData
 
 	execCount map[string]int
-	implGet   func(debugCtx *DebugSampleDataContext, name string) (any, error)
+	implGet   func(debugCtx *QDSampleDataContext, name string) (any, error)
 }
 
-var _ SampleData = (*DebugSampleData)(nil)
+var _ SampleData = (*QDSampleData)(nil)
 
-type DebugSampleDataOption func(*DebugSampleData)
+type QDSampleDataOption func(*QDSampleData)
 
-func NewDebugSampleData(options ...DebugSampleDataOption) *DebugSampleData {
-	ret := &DebugSampleData{execCount: map[string]int{}}
+func NewQDSampleData(options ...QDSampleDataOption) *QDSampleData {
+	ret := &QDSampleData{execCount: map[string]int{}}
 	for _, opt := range options {
 		opt(ret)
 	}
 	return ret
 }
 
-func (d *DebugSampleData) Get(name string) (any, error) {
+func (d *QDSampleData) Get(name string) (any, error) {
 	return d.implGet(d.createContext("Get", d.implGet == nil), name)
 }
 
-func (d *DebugSampleData) getCallerFuncName(skip int) (funcName string, file string, line int) {
+func (d *QDSampleData) getCallerFuncName(skip int) (funcName string, file string, line int) {
 	counter, file, line, success := runtime.Caller(skip)
 	if !success {
 		panic("runtime.Caller failed")
@@ -46,29 +46,29 @@ func (d *DebugSampleData) getCallerFuncName(skip int) (funcName string, file str
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *DebugSampleData) checkCallMethod(methodName string, implIsNil bool) (count int) {
+func (d *QDSampleData) checkCallMethod(methodName string, implIsNil bool) (count int) {
 	if implIsNil {
-		panic(fmt.Errorf("[DebugSampleData] method '%s' not implemented", methodName))
+		panic(fmt.Errorf("[QDSampleData] method '%s' not implemented", methodName))
 	}
 	d.execCount[methodName]++
 	return d.execCount[methodName]
 }
 
-func (d *DebugSampleData) createContext(methodName string, implIsNil bool) *DebugSampleDataContext {
+func (d *QDSampleData) createContext(methodName string, implIsNil bool) *QDSampleDataContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &DebugSampleDataContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
+	return &QDSampleDataContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
 }
 
 // Options
 
-func WithDebugSampleDataData(data *idata.IData) DebugSampleDataOption {
-	return func(d *DebugSampleData) {
+func WithQDSampleDataData(data *idata.IData) QDSampleDataOption {
+	return func(d *QDSampleData) {
 		d.Data = data
 	}
 }
 
-func WithDebugSampleDataGet(implGet func(debugCtx *DebugSampleDataContext, name string) (any, error)) DebugSampleDataOption {
-	return func(d *DebugSampleData) {
+func WithQDSampleDataGet(implGet func(debugCtx *QDSampleDataContext, name string) (any, error)) QDSampleDataOption {
+	return func(d *QDSampleData) {
 		d.implGet = implGet
 	}
 }

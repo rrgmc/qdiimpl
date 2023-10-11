@@ -16,9 +16,9 @@ func (I IIImpl) Setme() {
 func main() {
 	data := 12
 
-	x := NewDebugMyInterface[string, IIImpl](
-		WithDebugMyInterfaceDataQDII[string, IIImpl](&data),
-		WithDebugMyInterfaceGet[string, IIImpl](func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (string, error) {
+	x := NewQDMyInterface[string, IIImpl](
+		WithQDMyInterfaceDataQDII[string, IIImpl](&data),
+		WithQDMyInterfaceGet[string, IIImpl](func(debugCtx *QDMyInterfaceContext, ctx context.Context, name string) (string, error) {
 			d := debugCtx.Data.(*int)
 			*d++
 			return fmt.Sprintf("a%v", *d), nil
