@@ -106,8 +106,8 @@ func addTypeList(typeList *types.TypeList) func(*jen.Group) {
 
 func formatObjetName(obj types.Object) string {
 	pkg := ""
-	if obj.Pkg().Path() != "" {
-		pkg += obj.Pkg().Path()
+	if obj.Pkg().Name() != "" {
+		pkg += obj.Pkg().Name()
 	}
 	return pkg + "." + obj.Name()
 }

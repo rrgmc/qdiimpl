@@ -42,47 +42,47 @@ func NewQDMyInterface[T any, X II](options ...QDMyInterfaceOption[T, X]) *QDMyIn
 	return ret
 }
 
-// CloseNotify implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.CloseNotify]
+// CloseNotify implements [main.MyInterface.CloseNotify].
 func (d *QDMyInterface[T, X]) CloseNotify() <-chan bool {
 	return d.implCloseNotify(d.createContext("CloseNotify", d.implCloseNotify == nil))
 }
 
-// Data implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Data]
+// Data implements [main.MyInterface.Data].
 func (d *QDMyInterface[T, X]) Data() {
 	d.implData(d.createContext("Data", d.implData == nil))
 }
 
-// Get implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Get]
+// Get implements [main.MyInterface.Get].
 func (d *QDMyInterface[T, X]) Get(ctx context.Context, name string) (T, error) {
 	return d.implGet(d.createContext("Get", d.implGet == nil), ctx, name)
 }
 
-// Other implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Other]
+// Other implements [main.MyInterface.Other].
 func (d *QDMyInterface[T, X]) Other(si SecondInterface) int {
 	return d.implOther(d.createContext("Other", d.implOther == nil), si)
 }
 
-// Other2 implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Other2]
+// Other2 implements [main.MyInterface.Other2].
 func (d *QDMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 	return d.implOther2(d.createContext("Other2", d.implOther2 == nil), ti)
 }
 
-// Set implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Set]
+// Set implements [main.MyInterface.Set].
 func (d *QDMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
 	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
 }
 
-// Unnamed implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.Unnamed]
+// Unnamed implements [main.MyInterface.Unnamed].
 func (d *QDMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
 	d.implUnnamed(d.createContext("Unnamed", d.implUnnamed == nil), p0, p1)
 }
 
-// XGet implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.XGet]
+// XGet implements [main.MyInterface.XGet].
 func (d *QDMyInterface[T, X]) XGet(ss *SI) *SI {
 	return d.implXGet(d.createContext("XGet", d.implXGet == nil), ss)
 }
 
-// internal implements [github.com/RangelReale/qdiimpl/sample/complex.MyInterface.internal]
+// internal implements [main.MyInterface.internal].
 func (d *QDMyInterface[T, X]) internal() bool {
 	return d.implinternal(d.createContext("internal", d.implinternal == nil))
 }
@@ -118,54 +118,63 @@ func WithQDMyInterfaceDataQDII[T any, X II](data any) QDMyInterfaceOption[T, X] 
 	}
 }
 
+// WithQDMyInterfaceCloseNotify implements [main.MyInterface.CloseNotify].
 func WithQDMyInterfaceCloseNotify[T any, X II](implCloseNotify func(qdCtx *QDMyInterfaceContext) <-chan bool) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implCloseNotify = implCloseNotify
 	}
 }
 
+// WithQDMyInterfaceData implements [main.MyInterface.Data].
 func WithQDMyInterfaceData[T any, X II](implData func(qdCtx *QDMyInterfaceContext)) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implData = implData
 	}
 }
 
+// WithQDMyInterfaceGet implements [main.MyInterface.Get].
 func WithQDMyInterfaceGet[T any, X II](implGet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implGet = implGet
 	}
 }
 
+// WithQDMyInterfaceOther implements [main.MyInterface.Other].
 func WithQDMyInterfaceOther[T any, X II](implOther func(qdCtx *QDMyInterfaceContext, si SecondInterface) int) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implOther = implOther
 	}
 }
 
+// WithQDMyInterfaceOther2 implements [main.MyInterface.Other2].
 func WithQDMyInterfaceOther2[T any, X II](implOther2 func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implOther2 = implOther2
 	}
 }
 
+// WithQDMyInterfaceSet implements [main.MyInterface.Set].
 func WithQDMyInterfaceSet[T any, X II](implSet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implSet = implSet
 	}
 }
 
+// WithQDMyInterfaceUnnamed implements [main.MyInterface.Unnamed].
 func WithQDMyInterfaceUnnamed[T any, X II](implUnnamed func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implUnnamed = implUnnamed
 	}
 }
 
+// WithQDMyInterfaceXGet implements [main.MyInterface.XGet].
 func WithQDMyInterfaceXGet[T any, X II](implXGet func(qdCtx *QDMyInterfaceContext, ss *SI) *SI) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implXGet = implXGet
 	}
 }
 
+// WithQDMyInterfaceinternal implements [main.MyInterface.internal].
 func WithQDMyInterfaceinternal[T any, X II](implinternal func(qdCtx *QDMyInterfaceContext) bool) QDMyInterfaceOption[T, X] {
 	return func(d *QDMyInterface[T, X]) {
 		d.implinternal = implinternal
