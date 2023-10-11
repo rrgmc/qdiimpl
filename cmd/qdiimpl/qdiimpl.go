@@ -20,8 +20,7 @@ var (
 	samePackage      = flag.Bool("same-package", true, "output package should be the same as the source")
 	namePrefix       = flag.String("name-prefix", "debug", "interface name prefix; default is 'debug'")
 	nameSuffix       = flag.String("name-suffix", "", "interface name suffix; default is blank")
-	dataType         = flag.String("data", "any", "data member type; default is 'any'")
-	dataTypePkg      = flag.String("data-pkg", "", "data member type package; default is blank")
+	dataType         = flag.String("data", "any", "data member type; default is 'any'. (e.g.: package.com/data.XData)")
 	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
@@ -123,11 +122,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
-	var codeDataType *Statement
-	if *dataTypePkg == "" {
-		codeDataType = Id(*dataType)
-	} else {
-		codeDataType = Qual(*dataTypePkg, *dataType)
+	codeDataType, err := typeNameCode(*dataType)
+	if err != nil {
+		return err
 	}
 
 	dataParamName := getUniqueName("Data", func(nameExists string) bool {
@@ -151,7 +148,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			Id("CallerFunc").String(),
 			Id("CallerFile").String(),
 			Id("CallerLine").Int(),
-			Id("Data").Any(),
+			Id("Data").Add(codeDataType),
 		)
 	f.Line()
 

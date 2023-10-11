@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go/types"
+	"strings"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -46,6 +47,17 @@ func getQualCode(typ types.Type) *jen.Statement {
 			panic(fmt.Errorf("unknown type %T", typ))
 		}
 	}
+}
+
+func typeNameCode(typeName string) (jen.Code, error) {
+	lastIndex := strings.LastIndexAny(typeName, "/.")
+	if lastIndex == -1 {
+		return jen.Id(typeName), nil
+	}
+	if typeName[lastIndex:lastIndex+1] == "." {
+		return jen.Qual(typeName[:lastIndex], typeName[lastIndex+1:]), nil
+	}
+	return nil, fmt.Errorf("invalid type name format: %s", typeName)
 }
 
 func paramName(idx int, param *types.Var) string {
