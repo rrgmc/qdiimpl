@@ -13,6 +13,7 @@ type MyInterface[T any, X II] interface {
 	Other2(ti ThirdInterface[T]) int
 	Data()
 	internal() bool
+	CloseNotify() <-chan bool
 }
 
 type SecondInterface interface {

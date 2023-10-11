@@ -18,13 +18,14 @@ type DebugMyInterfaceContext struct {
 type DebugMyInterface[T any, X II] struct {
 	DataQDII any
 
-	execCount    map[string]int
-	implData     func(debugCtx *DebugMyInterfaceContext)
-	implGet      func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)
-	implOther    func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int
-	implOther2   func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int
-	implSet      func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error
-	implinternal func(debugCtx *DebugMyInterfaceContext) bool
+	execCount       map[string]int
+	implCloseNotify func(debugCtx *DebugMyInterfaceContext, c chan bool)
+	implData        func(debugCtx *DebugMyInterfaceContext)
+	implGet         func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string) (T, error)
+	implOther       func(debugCtx *DebugMyInterfaceContext, si SecondInterface) int
+	implOther2      func(debugCtx *DebugMyInterfaceContext, ti ThirdInterface[T]) int
+	implSet         func(debugCtx *DebugMyInterfaceContext, ctx context.Context, name string, value T) error
+	implinternal    func(debugCtx *DebugMyInterfaceContext) bool
 }
 
 type DebugMyInterfaceOption[T any, X II] func(*DebugMyInterface[T, X])
@@ -35,6 +36,10 @@ func NewDebugMyInterface[T any, X II](options ...DebugMyInterfaceOption[T, X]) *
 		opt(ret)
 	}
 	return ret
+}
+
+func (d *DebugMyInterface[T, X]) CloseNotify(c chan bool) {
+	d.implCloseNotify(d.createContext("CloseNotify", d.implCloseNotify == nil), c)
 }
 
 func (d *DebugMyInterface[T, X]) Data() {
@@ -87,6 +92,12 @@ func (d *DebugMyInterface[T, X]) createContext(methodName string, implIsNil bool
 func WithDebugMyInterfaceDataQDII[T any, X II](data any) DebugMyInterfaceOption[T, X] {
 	return func(d *DebugMyInterface[T, X]) {
 		d.DataQDII = data
+	}
+}
+
+func WithDebugMyInterfaceCloseNotify[T any, X II](implCloseNotify func(debugCtx *DebugMyInterfaceContext, c chan bool)) DebugMyInterfaceOption[T, X] {
+	return func(d *DebugMyInterface[T, X]) {
+		d.implCloseNotify = implCloseNotify
 	}
 }
 

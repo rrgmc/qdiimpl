@@ -29,6 +29,19 @@ func getQualCode(typ types.Type) *jen.Statement {
 			return st.Add(jen.Index().Add(getQualCode(tt.Elem())))
 		case *types.Map:
 			return st.Add(jen.Map(getQualCode(tt.Key())).Add(getQualCode(tt.Elem())))
+		case *types.Chan:
+			var chanDesc *jen.Statement
+			switch tt.Dir() {
+			case types.SendRecv:
+				chanDesc = jen.Chan()
+			case types.SendOnly:
+				chanDesc = jen.Chan().Op("<-")
+			case types.RecvOnly:
+				chanDesc = jen.Op("<-").Chan()
+			default:
+				panic("unknown channel direction")
+			}
+			return st.Add(chanDesc.Add(getQualCode(tt.Elem())))
 		default:
 			panic(fmt.Errorf("unknown type %T", typ))
 		}
