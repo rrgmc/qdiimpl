@@ -64,7 +64,7 @@ func typeNameCode(typeName string) (*jen.Statement, error) {
 	if typeName[lastIndex:lastIndex+1] == "." {
 		return st.Add(jen.Qual(typeName[:lastIndex], typeName[lastIndex+1:])), nil
 	}
-	return nil, fmt.Errorf("invalid type name format: %s", typeName)
+	return nil, fmt.Errorf("invalid type name format (must have a dot to determine the type): %s", typeName)
 }
 
 func paramName(idx int, param *types.Var) string {
