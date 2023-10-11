@@ -20,7 +20,9 @@ var (
 	samePackage      = flag.Bool("same-package", true, "output package should be the same as the source")
 	namePrefix       = flag.String("name-prefix", "debug", "interface name prefix; default is 'debug'")
 	nameSuffix       = flag.String("name-suffix", "", "interface name suffix; default is blank")
-	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdiimpl.go")
+	dataType         = flag.String("data", "any", "data member type; default is 'any'")
+	dataTypePkg      = flag.String("data-pkg", "", "data member type package; default is blank")
+	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
 )
@@ -121,6 +123,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
+	var codeDataType *Statement
+	if *dataTypePkg == "" {
+		codeDataType = Id(*dataType)
+	} else {
+		codeDataType = Qual(*dataTypePkg, *dataType)
+	}
+
 	dataParamName := getUniqueName("Data", func(nameExists string) bool {
 		for j := 0; j < iface.NumMethods(); j++ {
 			if iface.Method(j).Name() == nameExists {
@@ -156,7 +165,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 		}).
 		StructFunc(func(group *Group) {
-			group.Id(dataParamName).Any()
+			group.Id(dataParamName).Add(codeDataType)
 			group.Line()
 			group.Id("execCount").Map(String()).Int()
 
@@ -165,6 +174,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				mtd := iface.Method(j)
 				sig := mtd.Type().(*types.Signature)
 
+				// # implMETHOD  func(debugCtx *DebugTYPEContext, METHODPARAMS...) (METHODRESULTS...)
 				group.Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 					// add debug context parameter
 					debugCtxName := getUniqueName("debugCtx", func(nameExists string) bool {
@@ -183,8 +193,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				}).ParamsFunc(func(rgroup *Group) {
 					for k := 0; k < sig.Results().Len(); k++ {
 						sigParam := sig.Results().At(k)
-						// rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
-						rgroup.Add(getQualCode(sigParam.Type()))
+						rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
 					}
 				})
 			}
@@ -243,8 +252,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		}).ParamsFunc(func(rgroup *Group) {
 			for k := 0; k < sig.Results().Len(); k++ {
 				sigParam := sig.Results().At(k)
-				// rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
-				rgroup.Add(getQualCode(sigParam.Type()))
+				rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
 			}
 		}).Block(
 			Do(func(s *Statement) {
@@ -349,7 +357,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// WithData option
 	// # func WithDebugTYPEData(data any) DebugTYPEOption {}
 	f.Func().Id("With" + objName + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
-		Id("data").Any(),
+		Id("data").Add(codeDataType),
 	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
 		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
 			Id("d").Dot(dataParamName).Op("=").Id("data"),
