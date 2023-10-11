@@ -7,11 +7,11 @@ import (
 	"github.com/RangelReale/qdiimpl/sample/datatype/idata"
 )
 
-// -type=SampleData -data="*IData" -data-pkg="github.com/RangelReale/qdiimpl/sample/datatype/idata" -overwrite=true
+// -type=SampleData -data="*github.com/RangelReale/qdiimpl/sample/datatype/idata.IData" -overwrite=true
 
 func main() {
 	d := NewDebugSampleData(
-		WithDebugSampleDataData(idata.IData{Name: "xname", Value: "xvalue"}),
+		WithDebugSampleDataData(&idata.IData{Name: "xname", Value: "xvalue"}),
 		WithDebugSampleDataGet(func(debugCtx *DebugSampleDataContext, name string) (any, error) {
 			if name == debugCtx.Data.Name {
 				return debugCtx.Data.Value, nil

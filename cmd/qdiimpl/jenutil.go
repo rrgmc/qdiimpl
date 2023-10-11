@@ -49,13 +49,20 @@ func getQualCode(typ types.Type) *jen.Statement {
 	}
 }
 
-func typeNameCode(typeName string) (jen.Code, error) {
+func typeNameCode(typeName string) (*jen.Statement, error) {
+	typeName, isPtr := strings.CutPrefix(typeName, "*")
+
+	var st jen.Statement
+	if isPtr {
+		st.Add(jen.Op("*"))
+	}
+
 	lastIndex := strings.LastIndexAny(typeName, "/.")
 	if lastIndex == -1 {
-		return jen.Id(typeName), nil
+		return st.Add(jen.Id(typeName)), nil
 	}
 	if typeName[lastIndex:lastIndex+1] == "." {
-		return jen.Qual(typeName[:lastIndex], typeName[lastIndex+1:]), nil
+		return st.Add(jen.Qual(typeName[:lastIndex], typeName[lastIndex+1:])), nil
 	}
 	return nil, fmt.Errorf("invalid type name format: %s", typeName)
 }
