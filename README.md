@@ -10,6 +10,12 @@ nothing to do with these interfaces.
 Another option would be using a mock, however outside of tests they are cumbersome to use because mocks need to set 
 expectations and usually are limited by execution amounts. 
 
+## Install
+
+```shell
+$ go install github.com/RangelReale/qdiimpl/cmd/qdiimpl@master
+```
+
 ## Usage
 
 ```shell
