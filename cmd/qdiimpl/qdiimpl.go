@@ -178,12 +178,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					pgroup.Id(debugCtxName).Op("*").Id(objContext)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
-						pgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+						pgroup.Id(paramName(k, sigParam)).Add(getQualCode(sigParam.Type()))
 					}
 				}).ParamsFunc(func(rgroup *Group) {
 					for k := 0; k < sig.Results().Len(); k++ {
 						sigParam := sig.Results().At(k)
-						rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+						// rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+						rgroup.Add(getQualCode(sigParam.Type()))
 					}
 				})
 			}
@@ -237,12 +238,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
 				sigParam := sig.Params().At(k)
-				pgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+				pgroup.Id(paramName(k, sigParam)).Add(getQualCode(sigParam.Type()))
 			}
 		}).ParamsFunc(func(rgroup *Group) {
 			for k := 0; k < sig.Results().Len(); k++ {
 				sigParam := sig.Results().At(k)
-				rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+				// rgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+				rgroup.Add(getQualCode(sigParam.Type()))
 			}
 		}).Block(
 			Do(func(s *Statement) {
@@ -252,7 +254,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
-						cgroup.Id(sigParam.Name())
+						cgroup.Id(paramName(k, sigParam))
 					}
 				})
 				if sig.Results().Len() == 0 {
@@ -376,7 +378,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				pgroup.Id(debugCtxName).Op("*").Id(objContext)
 				for k := 0; k < sig.Params().Len(); k++ {
 					sigParam := sig.Params().At(k)
-					pgroup.Id(sigParam.Name()).Add(getQualCode(sigParam.Type()))
+					pgroup.Id(paramName(k, sigParam)).Add(getQualCode(sigParam.Type()))
 				}
 			}).ParamsFunc(func(rgroup *Group) {
 				for k := 0; k < sig.Results().Len(); k++ {

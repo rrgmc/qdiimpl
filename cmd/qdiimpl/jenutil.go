@@ -48,6 +48,13 @@ func getQualCode(typ types.Type) *jen.Statement {
 	}
 }
 
+func paramName(idx int, param *types.Var) string {
+	if param.Name() != "" {
+		return param.Name()
+	}
+	return fmt.Sprintf("p%d", idx)
+}
+
 func addTypeParamsList(typeList *types.TypeParamList, withType bool) func(*jen.Group) {
 	return func(tgroup *jen.Group) {
 		for t := 0; t < typeList.Len(); t++ {

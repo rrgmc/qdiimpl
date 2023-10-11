@@ -14,6 +14,7 @@ type MyInterface[T any, X II] interface {
 	Data()
 	internal() bool
 	CloseNotify() <-chan bool
+	Unnamed(bool, string)
 }
 
 type SecondInterface interface {
