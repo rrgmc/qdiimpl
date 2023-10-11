@@ -20,7 +20,7 @@ $ go install github.com/RangelReale/qdiimpl/cmd/qdiimpl@master
 
 ```shell
 $ cd app/pkg/client
-$ go run github.com/RangelReale/qdiimpl/cmd/qdiimpl -type=StorageClient
+$ go run github.com/RangelReale/qdiimpl/cmd/qdiimpl@master -type=StorageClient
 Writing file storageclient_qdii.go...
 ```
 
