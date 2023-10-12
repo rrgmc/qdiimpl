@@ -15,18 +15,18 @@ type QDReaderContext struct {
 	CallerLine int
 }
 
-type QDReader struct {
+type qdReader struct {
 	lock      sync.Mutex
 	execCount map[string]int
 	implRead  func(qdCtx *QDReaderContext, p []byte) (n int, err error)
 }
 
-var _ io.Reader = (*QDReader)(nil)
+var _ io.Reader = (*qdReader)(nil)
 
-type QDReaderOption func(*QDReader)
+type QDReaderOption func(*qdReader)
 
-func NewQDReader(options ...QDReaderOption) *QDReader {
-	ret := &QDReader{execCount: map[string]int{}}
+func NewQDReader(options ...QDReaderOption) io.Reader {
+	ret := &qdReader{execCount: map[string]int{}}
 	for _, opt := range options {
 		opt(ret)
 	}
@@ -34,11 +34,11 @@ func NewQDReader(options ...QDReaderOption) *QDReader {
 }
 
 // Read implements [io.Reader.Read].
-func (d *QDReader) Read(p []byte) (n int, err error) {
+func (d *qdReader) Read(p []byte) (n int, err error) {
 	return d.implRead(d.createContext("Read", d.implRead == nil), p)
 }
 
-func (d *QDReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
+func (d *qdReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
 	counter, file, line, success := runtime.Caller(skip)
 	if !success {
 		panic("runtime.Caller failed")
@@ -46,9 +46,9 @@ func (d *QDReader) getCallerFuncName(skip int) (funcName string, file string, li
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *QDReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
+func (d *qdReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
 	if implIsNil {
-		panic(fmt.Errorf("[QDReader] method '%s' not implemented", methodName))
+		panic(fmt.Errorf("[qdReader] method '%s' not implemented", methodName))
 	}
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -56,16 +56,16 @@ func (d *QDReader) checkCallMethod(methodName string, implIsNil bool) (count int
 	return d.execCount[methodName]
 }
 
-func (d *QDReader) createContext(methodName string, implIsNil bool) *QDReaderContext {
+func (d *qdReader) createContext(methodName string, implIsNil bool) *QDReaderContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
 	return &QDReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
 }
 
 // Options
 
-// WithQDReaderRead implements [io.Reader.Read].
+// WithqdReaderRead implements [io.Reader.Read].
 func WithQDReaderRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
-	return func(d *QDReader) {
+	return func(d *qdReader) {
 		d.implRead = implRead
 	}
 }
