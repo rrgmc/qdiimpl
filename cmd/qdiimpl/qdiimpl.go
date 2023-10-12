@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/RangelReale/qdiimpl/internal/util"
 	. "github.com/dave/jennifer/jen"
 	"golang.org/x/tools/go/packages"
 )
@@ -65,7 +66,7 @@ func main() {
 }
 
 func run(source, typ string, tags []string) error {
-	srcPkg, err := PkgInfoFromPath(
+	srcPkg, err := util.PkgInfoFromPath(
 		source, *typePackageName, packages.NeedName|packages.NeedSyntax|packages.NeedTypes, tags,
 	)
 	if err != nil {
@@ -126,13 +127,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	var err error
 	var codeDataType *Statement
 	if *dataType != "" {
-		codeDataType, err = TypeNameCode(*dataType)
+		codeDataType, err = util.TypeNameCode(*dataType)
 		if err != nil {
 			return err
 		}
 	}
 
-	dataParamName := GetUniqueName("Data", func(nameExists string) bool {
+	dataParamName := util.GetUniqueName("Data", func(nameExists string) bool {
 		for j := 0; j < iface.NumMethods(); j++ {
 			if iface.Method(j).Name() == nameExists {
 				return true
@@ -142,8 +143,8 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	})
 
 	// default interface generic types
-	codeObjectTypes := AddTypeParamsList(objNamedType.TypeParams(), false)
-	codeObjectTypesWithType := AddTypeParamsList(objNamedType.TypeParams(), true)
+	codeObjectTypes := util.AddTypeParamsList(objNamedType.TypeParams(), false)
+	codeObjectTypesWithType := util.AddTypeParamsList(objNamedType.TypeParams(), true)
 
 	// Debug Context
 	// # type QDTYPEContext struct {}
@@ -165,7 +166,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		TypesFunc(func(tgroup *Group) {
 			for t := 0; t < objNamedType.TypeParams().Len(); t++ {
 				tparam := objNamedType.TypeParams().At(t)
-				tgroup.Id(tparam.Obj().Name()).Add(GetQualCode(tparam.Constraint()))
+				tgroup.Id(tparam.Obj().Name()).Add(util.GetQualCode(tparam.Constraint()))
 			}
 		}).
 		StructFunc(func(group *Group) {
@@ -186,7 +187,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				// # implMETHOD  func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)
 				group.Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 					// add debug context parameter
-					qdCtxName := GetUniqueName("qdCtx", func(nameExists string) bool {
+					qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
 						for k := 0; k < sig.Params().Len(); k++ {
 							if sig.Params().At(k).Name() == nameExists {
 								return true
@@ -197,12 +198,12 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					pgroup.Id(qdCtxName).Op("*").Id(objContext)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
-						pgroup.Id(ParamName(k, sigParam)).Add(GetQualCode(sigParam.Type()))
+						pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetQualCode(sigParam.Type()))
 					}
 				}).ParamsFunc(func(rgroup *Group) {
 					for k := 0; k < sig.Results().Len(); k++ {
 						sigParam := sig.Results().At(k)
-						rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
+						rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 					}
 				})
 			}
@@ -212,7 +213,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	if objNamedType.TypeParams().Len() == 0 { // with generics, it is harder to find suitable types
 		f.Line()
 		// # var _ TYPE = (*debugTYPE)(nil)
-		f.Var().Id("_").Add(GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)).Op("=").
+		f.Var().Id("_").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)).Op("=").
 			Parens(Op("*").Id(objName).TypesFunc(codeObjectTypes)).Parens(Nil())
 	}
 
@@ -253,16 +254,16 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		sig := mtd.Type().(*types.Signature)
 
 		// # func (d *debugTYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
-		f.Commentf("%s implements [%s.%s].", mtd.Name(), FormatObjectName(obj), mtd.Name())
+		f.Commentf("%s implements [%s.%s].", mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
 				sigParam := sig.Params().At(k)
-				pgroup.Id(ParamName(k, sigParam)).Add(GetQualCode(sigParam.Type()))
+				pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetQualCode(sigParam.Type()))
 			}
 		}).ParamsFunc(func(rgroup *Group) {
 			for k := 0; k < sig.Results().Len(); k++ {
 				sigParam := sig.Results().At(k)
-				rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
+				rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 			}
 		}).Block(
 			Do(func(s *Statement) {
@@ -272,7 +273,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
-						cgroup.Id(ParamName(k, sigParam))
+						cgroup.Id(util.ParamName(k, sigParam))
 					}
 				})
 				if sig.Results().Len() == 0 {
@@ -389,11 +390,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Line()
 
 		// # func WithQDTYPEMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
-		f.Commentf("With%s%s implements [%s.%s].", objName, mtd.Name(), FormatObjectName(obj), mtd.Name())
+		f.Commentf("With%s%s implements [%s.%s].", objName, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Id("With" + objName + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add debug context parameter
-				qdCtxName := GetUniqueName("qdCtx", func(nameExists string) bool {
+				qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
 					for k := 0; k < sig.Params().Len(); k++ {
 						if sig.Params().At(k).Name() == nameExists {
 							return true
@@ -404,12 +405,12 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				pgroup.Id(qdCtxName).Op("*").Id(objContext)
 				for k := 0; k < sig.Params().Len(); k++ {
 					sigParam := sig.Params().At(k)
-					pgroup.Id(ParamName(k, sigParam)).Add(GetQualCode(sigParam.Type()))
+					pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetQualCode(sigParam.Type()))
 				}
 			}).ParamsFunc(func(rgroup *Group) {
 				for k := 0; k < sig.Results().Len(); k++ {
 					sigParam := sig.Results().At(k)
-					rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
+					rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 				}
 			}),
 		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
