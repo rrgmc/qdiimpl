@@ -65,7 +65,7 @@ Flags:
 ### io.Reader
 
 ```shell
-go run github.com/RangelReale/qdiimpl/cmd/qdiimpl -type=Reader -type-package=io -force-package-name=main
+go run github.com/RangelReale/qdiimpl/cmd/qdiimpl@latest -type=Reader -type-package=io -force-package-name=main
 ```
 
 File: `reader_qdii.go`
