@@ -13,7 +13,7 @@ expectations and usually are limited by execution amounts.
 ## Install
 
 ```shell
-$ go install github.com/RangelReale/qdiimpl/cmd/qdiimpl@master
+go install github.com/RangelReale/qdiimpl/cmd/qdiimpl@master
 ```
 
 ## Usage
@@ -63,7 +63,7 @@ Flags:
 ### io.Reader
 
 ```shell
-$ go run github.com/RangelReale/qdiimpl/cmd/qdiimpl -type=Reader -package=io -force-package=main
+go run github.com/RangelReale/qdiimpl/cmd/qdiimpl -type=Reader -type-package=io -force-package-name=main
 ```
 
 File: `reader_qdii.go`
