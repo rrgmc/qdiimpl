@@ -75,13 +75,6 @@ func TypeNameCode(typeName string) (*jen.Statement, error) {
 	return nil, fmt.Errorf("invalid type name format (must have a dot to determine the type): %s", typeName)
 }
 
-func ParamName(idx int, param *types.Var) string {
-	if param.Name() != "" {
-		return param.Name()
-	}
-	return fmt.Sprintf("p%d", idx)
-}
-
 func AddTypeParamsList(typeList *types.TypeParamList, withType bool) func(*jen.Group) {
 	return func(tgroup *jen.Group) {
 		for t := 0; t < typeList.Len(); t++ {
@@ -102,12 +95,4 @@ func AddTypeList(typeList *types.TypeList) func(*jen.Group) {
 			tgroup.Add(GetQualCode(tparam))
 		}
 	}
-}
-
-func FormatObjectName(obj types.Object) string {
-	pkg := ""
-	if obj.Pkg().Name() != "" {
-		pkg += obj.Pkg().Name()
-	}
-	return pkg + "." + obj.Name()
 }
