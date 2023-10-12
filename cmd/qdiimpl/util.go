@@ -8,7 +8,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func pkgInfoFromPath(srcDir string, packageName string, mode packages.LoadMode, tags []string) (*packages.Package, error) {
+func PkgInfoFromPath(srcDir string, packageName string, mode packages.LoadMode, tags []string) (*packages.Package, error) {
 	var patterns []string
 	if packageName != "" {
 		patterns = append(patterns, packageName)
@@ -37,7 +37,7 @@ func pkgInfoFromPath(srcDir string, packageName string, mode packages.LoadMode, 
 	return pkgs[0], nil
 }
 
-func getUniqueName(defaultName string, f func(nameExists string) bool) string {
+func GetUniqueName(defaultName string, f func(nameExists string) bool) string {
 	ct := 0
 	currentName := defaultName
 	for {
@@ -53,8 +53,8 @@ func getUniqueName(defaultName string, f func(nameExists string) bool) string {
 	}
 }
 
-// initialToLower converts initial to lower.
-func initialToLower(s string) string {
+// InitialToLower converts initial to lower.
+func InitialToLower(s string) string {
 	for _, r := range s {
 		u := string(unicode.ToLower(r))
 		return u + s[len(u):]
@@ -63,8 +63,8 @@ func initialToLower(s string) string {
 	return s
 }
 
-// initialToUpper converts initial to upper.
-func initialToUpper(s string) string {
+// InitialToUpper converts initial to upper.
+func InitialToUpper(s string) string {
 	for _, r := range s {
 		u := string(unicode.ToUpper(r))
 		return u + s[len(u):]
