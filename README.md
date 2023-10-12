@@ -136,7 +136,7 @@ func (d *qdReader) createContext(methodName string, implIsNil bool) *QDReaderCon
 
 // Options
 
-// WithqdReaderRead implements [io.Reader.Read].
+// WithQDReaderRead implements [io.Reader.Read].
 func WithQDReaderRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
     return func(d *qdReader) {
         d.implRead = implRead

@@ -415,7 +415,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Line()
 
 		// # func WithQDTYPEMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
-		f.Commentf("With%s%s implements [%s.%s].", objName, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
+		f.Commentf("With%s%s implements [%s.%s].", objNameExported, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Id("With" + objNameExported + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add qd context parameter
