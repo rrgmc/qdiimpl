@@ -13,14 +13,14 @@ expectations and usually are limited by execution amounts.
 ## Install
 
 ```shell
-go install github.com/RangelReale/qdiimpl/cmd/qdiimpl@master
+go install github.com/RangelReale/qdiimpl/cmd/qdiimpl@latest
 ```
 
 ## Usage
 
 ```shell
 $ cd app/pkg/client
-$ go run github.com/RangelReale/qdiimpl/cmd/qdiimpl@master -type=StorageClient
+$ go run github.com/RangelReale/qdiimpl/cmd/qdiimpl@latest -type=StorageClient
 Writing file storageclient_qdii.go...
 ```
 
