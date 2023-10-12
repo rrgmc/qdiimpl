@@ -146,7 +146,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	codeObjectTypes := util.AddTypeParamsList(objNamedType.TypeParams(), false)
 	codeObjectTypesWithType := util.AddTypeParamsList(objNamedType.TypeParams(), true)
 
-	// Debug Context
+	// QD Context
 	// # type QDTYPEContext struct {}
 	f.Type().Id(objContext).
 		StructFunc(func(sgroup *Group) {
@@ -161,7 +161,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// Struct implementation
-	// # type debugTYPE struct {}
+	// # type QDTYPE struct {}
 	f.Type().Id(objName).
 		TypesFunc(func(tgroup *Group) {
 			for t := 0; t < objNamedType.TypeParams().Len(); t++ {
@@ -186,7 +186,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 				// # implMETHOD  func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)
 				group.Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
-					// add debug context parameter
+					// add qd context parameter
 					qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
 						for k := 0; k < sig.Params().Len(); k++ {
 							if sig.Params().At(k).Name() == nameExists {
@@ -212,7 +212,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// ensure struct implements interface
 	if objNamedType.TypeParams().Len() == 0 { // with generics, it is harder to find suitable types
 		f.Line()
-		// # var _ TYPE = (*debugTYPE)(nil)
+		// # var _ TYPE = (*QDTYPE)(nil)
 		f.Var().Id("_").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)).Op("=").
 			Parens(Op("*").Id(objName).TypesFunc(codeObjectTypes)).Parens(Nil())
 	}
@@ -220,7 +220,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// option type
-	// # type QDTYPEOption func(*debugTYPE)
+	// # type QDTYPEOption func(*QDTYPE)
 	f.Type().Id(objOption).TypesFunc(codeObjectTypesWithType).Func().Params(Op("*").Id(objName).TypesFunc(codeObjectTypes))
 
 	f.Line()
@@ -253,7 +253,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		mtd := iface.Method(j)
 		sig := mtd.Type().(*types.Signature)
 
-		// # func (d *debugTYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
+		// # func (d *QDTYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
 		f.Commentf("%s implements [%s.%s].", mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
@@ -289,7 +289,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// getCallerFuncName
-	// # func (d *debugTYPE) getCallerFuncName(skip int) (funcName string, file string, line int) {}
+	// # func (d *QDTYPE) getCallerFuncName(skip int) (funcName string, file string, line int) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("getCallerFuncName").
 		Params(
@@ -315,7 +315,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// checkCallMethod
-	// # func (d *debugTYPE) checkCallMethod(methodName string, implIsNil bool) (count int) {}
+	// # func (d *QDTYPE) checkCallMethod(methodName string, implIsNil bool) (count int) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("checkCallMethod").
 		Params(
@@ -340,7 +340,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// createContext
-	// # func (d *debugTYPE[T, X]) createContext(methodName string, implIsNil bool) *QDTYPEContext {}
+	// # func (d *QDTYPE) createContext(methodName string, implIsNil bool) *QDTYPEContext {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("createContext").
 		Params(
@@ -393,7 +393,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Commentf("With%s%s implements [%s.%s].", objName, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Id("With" + objName + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
-				// add debug context parameter
+				// add qd context parameter
 				qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
 					for k := 0; k < sig.Params().Len(); k++ {
 						if sig.Params().At(k).Name() == nameExists {
