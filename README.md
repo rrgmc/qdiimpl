@@ -24,7 +24,7 @@ $ go run github.com/RangelReale/qdiimpl/cmd/qdiimpl@latest -type=StorageClient
 Writing file storageclient_qdii.go...
 ```
 
-There is an option for each interface method called `WithDebugTYPEMETHOD` to set a function that will be called when
+There is an option for each interface method called `WithQDTYPEMETHOD` to set a function that will be called when
 the method is called. If a method is called when a function is not set, the implementation panics with a useful
 message.
 
@@ -180,7 +180,7 @@ Each method is passed a "QDContext" which contains these fields:
 - `CallerFunc`: fully-qualified function name that called the interface method.
 - `CallerFile`: source file name of the function that called the interface method.
 - `CallerLine`: line number of the source file of the function that called the interface method.
-- `Data`: a custom data field set by `WithDebugTYPEData` option. (only when `data-type` command line parameter is set)
+- `Data`: a custom data field set by `WithQDTYPEData` option. (only when `data-type` command line parameter is set)
 
 Use these properties to help detect where the method was called from and return different responses if needed.
 
