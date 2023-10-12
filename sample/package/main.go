@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-// -type=Reader -package=io -overwrite=true -force-package=main
+// -type=Reader -type-package=io -overwrite=true -force-package-name=main
 
 func main() {
 	reader := NewQDReader(

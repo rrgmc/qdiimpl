@@ -15,9 +15,9 @@ import (
 
 var (
 	typeName         = flag.String("type", "", "type name; must be set")
-	packageName      = flag.String("package", "", "package name if not the current directory")
-	forcePackageName = flag.String("force-package", "", "force package name")
-	samePackage      = flag.Bool("same-package", true, "output package should be the same as the source")
+	typePackageName  = flag.String("type-package", "", "type package path if not the current directory")
+	forcePackageName = flag.String("force-package-name", "", "force generated package name")
+	samePackage      = flag.Bool("same-package", true, "if false will import source package and qualify the types")
 	namePrefix       = flag.String("name-prefix", "QD", "interface name prefix")
 	nameSuffix       = flag.String("name-suffix", "", "interface name suffix (default blank)")
 	dataType         = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
@@ -66,7 +66,7 @@ func main() {
 
 func run(source, typ string, tags []string) error {
 	srcPkg, err := pkgInfoFromPath(
-		source, *packageName, packages.NeedName|packages.NeedSyntax|packages.NeedTypes, tags,
+		source, *typePackageName, packages.NeedName|packages.NeedSyntax|packages.NeedTypes, tags,
 	)
 	if err != nil {
 		return fmt.Errorf("couldn't load source package: %s", err)
@@ -109,7 +109,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		filePackageName = *forcePackageName
 	}
 
-	if *packageName != "" || !*samePackage {
+	if *typePackageName != "" || !*samePackage {
 		f = NewFile(filePackageName)
 	} else {
 		f = NewFilePathName(obj.Pkg().Path(), filePackageName)

@@ -36,8 +36,8 @@ Usage of qdiimpl:
 Flags:
   -data-type any
         add a data member of this type (e.g.: any, `package.com/data.XData`)
-  -force-package string
-        force package name
+  -force-package-name string
+        force generated package name
   -name-prefix string
         interface name prefix (default "QD")
   -name-suffix string
@@ -46,16 +46,16 @@ Flags:
         output file name; default srcdir/<type>_qdii.go
   -overwrite
         overwrite file if exists
-  -package string
-        package name if not the current directory
   -same-package
-        output package should be the same as the source (default true)
+        if false will import source package and qualify the types (default true)
   -sync
         use mutex to prevent concurrent accesses (default true)
   -tags string
         comma-separated list of build tags to apply
   -type string
         type name; must be set
+  -type-package string
+        type package path if not the current directory
 ```
 
 # Samples
