@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"flag"
@@ -37,7 +37,7 @@ func Usage() {
 	flag.PrintDefaults()
 }
 
-func main() {
+func Main() {
 	log.SetFlags(0)
 	log.SetPrefix("qdiimpl: ")
 	flag.Usage = Usage
