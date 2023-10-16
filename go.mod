@@ -1,4 +1,4 @@
-module github.com/RangelReale/qdiimpl
+module github.com/rrgmc/qdiimpl
 
 go 1.21
 

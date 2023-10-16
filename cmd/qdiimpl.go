@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/RangelReale/qdiimpl/internal/util"
 	. "github.com/dave/jennifer/jen"
+	"github.com/rrgmc/qdiimpl/internal/util"
 	"golang.org/x/tools/go/packages"
 )
 

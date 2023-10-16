@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/RangelReale/qdiimpl/sample/datatype/idata"
+	"github.com/rrgmc/qdiimpl/sample/datatype/idata"
 )
 
-// -type=SampleData -data-type="*github.com/RangelReale/qdiimpl/sample/datatype/idata.IData" -export-type=true -overwrite=true
+// -type=SampleData -data-type="*github.com/rrgmc/qdiimpl/sample/datatype/idata.IData" -export-type=true -overwrite=true
 
 func main() {
 	d := NewQDSampleData(

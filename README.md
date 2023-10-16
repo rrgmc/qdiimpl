@@ -13,14 +13,14 @@ expectations and usually are limited by execution amounts.
 ## Install
 
 ```shell
-go install github.com/RangelReale/qdiimpl@latest
+go install github.com/rrgmc/qdiimpl@latest
 ```
 
 ## Usage
 
 ```shell
 $ cd app/pkg/client
-$ go run github.com/RangelReale/qdiimpl@latest -type=StorageClient
+$ go run github.com/rrgmc/qdiimpl@latest -type=StorageClient
 Writing file storageclient_qdii.go...
 ```
 
@@ -65,7 +65,7 @@ Flags:
 ### io.Reader
 
 ```shell
-go run github.com/RangelReale/qdiimpl@latest -type=Reader -type-package=io -force-package-name=main
+go run github.com/rrgmc/qdiimpl@latest -type=Reader -type-package=io -force-package-name=main
 ```
 
 File: `reader_qdii.go`

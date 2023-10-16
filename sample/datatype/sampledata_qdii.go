@@ -3,7 +3,7 @@ package main
 
 import (
 	"fmt"
-	idata "github.com/RangelReale/qdiimpl/sample/datatype/idata"
+	idata "github.com/rrgmc/qdiimpl/sample/datatype/idata"
 	"runtime"
 	"sync"
 )

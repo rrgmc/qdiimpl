@@ -1,6 +1,6 @@
 package main
 
-import "github.com/RangelReale/qdiimpl/cmd"
+import "github.com/rrgmc/qdiimpl/cmd"
 
 func main() {
 	cmd.Main()
