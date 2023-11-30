@@ -160,6 +160,14 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		}
 		return false
 	})
+	fallbackParamName := util.GetUniqueName("fallback", func(nameExists string) bool {
+		for j := 0; j < iface.NumMethods(); j++ {
+			if iface.Method(j).Name() == nameExists {
+				return true
+			}
+		}
+		return false
+	})
 
 	// default interface generic types
 	codeObjectTypes := util.AddTypeParamsList(objNamedType.TypeParams(), false)
@@ -197,6 +205,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				group.Id("lock").Qual("sync", "Mutex")
 			}
 			group.Id("execCount").Map(String()).Int()
+			group.Id(fallbackParamName).Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
 
 			// interface method impls
 			for j := 0; j < iface.NumMethods(); j++ {
@@ -292,6 +301,24 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 		}).Block(
 			Do(func(s *Statement) {
+				s.If(Id("d").Dot("impl" + mtd.Name()).Op("==").Nil().
+					Op("&&").
+					Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
+					icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
+						for k := 0; k < sig.Params().Len(); k++ {
+							sigParam := sig.Params().At(k)
+							igroup.Id(util.ParamName(k, sigParam))
+						}
+					})
+					if sig.Results().Len() == 0 {
+						bgroup.Add(icall)
+						bgroup.Return()
+					} else {
+						bgroup.Add(Return(icall))
+					}
+				})
+				s.Line()
+
 				call := Id("d").Dot("impl" + mtd.Name()).CallFunc(func(cgroup *Group) {
 					cgroup.Id("d").Dot("createContext").Call(
 						Lit(mtd.Name()), Id("d").Dot("impl"+mtd.Name()).Op("==").Nil(),
@@ -406,6 +433,16 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			)),
 		)
 	}
+
+	// WithFallback option
+	// # func WithQDTYPEFallback(fallback SOURCETYPE) QDTYPEOption {}
+	f.Func().Id("With" + objNameExported + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).Params(
+		Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)),
+	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
+		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
+			Id("d").Dot(fallbackParamName).Op("=").Id("fallback"),
+		)),
+	)
 
 	// method options
 	for j := 0; j < iface.NumMethods(); j++ {
