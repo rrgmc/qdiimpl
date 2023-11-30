@@ -18,6 +18,7 @@ type QDReaderContext struct {
 type qdReader struct {
 	lock      sync.Mutex
 	execCount map[string]int
+	fallback  io.Reader
 	implRead  func(qdCtx *QDReaderContext, p []byte) (n int, err error)
 }
 
@@ -35,6 +36,9 @@ func NewQDReader(options ...QDReaderOption) io.Reader {
 
 // Read implements [io.Reader.Read].
 func (d *qdReader) Read(p []byte) (n int, err error) {
+	if d.implRead == nil && d.fallback != nil {
+		return d.fallback.Read(p)
+	}
 	return d.implRead(d.createContext("Read", d.implRead == nil), p)
 }
 
@@ -62,6 +66,12 @@ func (d *qdReader) createContext(methodName string, implIsNil bool) *QDReaderCon
 }
 
 // Options
+
+func WithQDReaderFallback(fallback io.Reader) QDReaderOption {
+	return func(d *qdReader) {
+		d.fallback = fallback
+	}
+}
 
 // WithQDReaderRead implements [io.Reader.Read].
 func WithQDReaderRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {

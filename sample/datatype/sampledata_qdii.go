@@ -21,6 +21,7 @@ type QDSampleData struct {
 
 	lock      sync.Mutex
 	execCount map[string]int
+	fallback  SampleData
 	implGet   func(qdCtx *QDSampleDataContext, name string) (any, error)
 }
 
@@ -38,6 +39,9 @@ func NewQDSampleData(options ...QDSampleDataOption) *QDSampleData {
 
 // Get implements [main.SampleData.Get].
 func (d *QDSampleData) Get(name string) (any, error) {
+	if d.implGet == nil && d.fallback != nil {
+		return d.fallback.Get(name)
+	}
 	return d.implGet(d.createContext("Get", d.implGet == nil), name)
 }
 
@@ -69,6 +73,11 @@ func (d *QDSampleData) createContext(methodName string, implIsNil bool) *QDSampl
 func WithQDSampleDataData(data *idata.IData) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.Data = data
+	}
+}
+func WithQDSampleDataFallback(fallback SampleData) QDSampleDataOption {
+	return func(d *QDSampleData) {
+		d.fallback = fallback
 	}
 }
 
