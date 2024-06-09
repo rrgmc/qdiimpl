@@ -51,6 +51,20 @@ func GetQualCode(typ types.Type) *jen.Statement {
 			return st.Add(jen.Id(tt.Obj().Name()).TypesFunc(AddTypeList(tt.TypeArgs())))
 		case *types.TypeParam:
 			return st.Add(jen.Id(tt.Obj().Name()))
+		case *types.Signature:
+			return st.Add(jen.Func().
+				ParamsFunc(func(pgroup *jen.Group) {
+					for k := 0; k < tt.Params().Len(); k++ {
+						sigParam := tt.Params().At(k)
+						pgroup.Id(ParamName(k, sigParam)).Add(GetQualCode(sigParam.Type()))
+					}
+				}).
+				ParamsFunc(func(rgroup *jen.Group) {
+					for k := 0; k < tt.Results().Len(); k++ {
+						sigParam := tt.Results().At(k)
+						rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
+					}
+				}))
 		default:
 			panic(fmt.Errorf("unknown type %T", typ))
 		}
