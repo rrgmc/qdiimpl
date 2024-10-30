@@ -13,7 +13,7 @@ type SI struct {
 type XI = SI
 
 type MyInterface[T any, X II] interface {
-	Get(ctx context.Context, name string) (T, error)
+	Get(ctx context.Context, name string) (x1 T, err error)
 	Set(ctx context.Context, name string, value T) error
 	Other(si SecondInterface) int
 	Other2(ti ThirdInterface[T]) int

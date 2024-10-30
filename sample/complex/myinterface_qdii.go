@@ -9,11 +9,18 @@ import (
 )
 
 type QDMyInterfaceContext struct {
-	ExecCount  int
-	CallerFunc string
-	CallerFile string
-	CallerLine int
-	Data       any
+	ExecCount      int
+	CallerFunc     string
+	CallerFile     string
+	CallerLine     int
+	isNotSupported bool
+	Data           any
+}
+
+// NotSupported should be called if the current callback don't support the passed arguments.
+// The function return values will be ignored.
+func (c *QDMyInterfaceContext) NotSupported() {
+	c.isNotSupported = true
 }
 
 type qdMyInterface[T any, X II] struct {
@@ -22,16 +29,16 @@ type qdMyInterface[T any, X II] struct {
 	lock            sync.Mutex
 	execCount       map[string]int
 	fallback        MyInterface[T, X]
-	implCloseNotify func(qdCtx *QDMyInterfaceContext) <-chan bool
-	implData        func(qdCtx *QDMyInterfaceContext)
-	implGet         func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)
-	implOther       func(qdCtx *QDMyInterfaceContext, si SecondInterface) int
-	implOther2      func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int
-	implSet         func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
-	implUnnamed     func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)
-	implXGet        func(qdCtx *QDMyInterfaceContext, ss *SI) *SI
-	implXGet2       func(qdCtx *QDMyInterfaceContext, ss *XI) *XI
-	implinternal    func(qdCtx *QDMyInterfaceContext) bool
+	implCloseNotify []func(qdCtx *QDMyInterfaceContext) <-chan bool
+	implData        []func(qdCtx *QDMyInterfaceContext)
+	implGet         []func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (x1 T, err error)
+	implOther       []func(qdCtx *QDMyInterfaceContext, si SecondInterface) int
+	implOther2      []func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int
+	implSet         []func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
+	implUnnamed     []func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)
+	implXGet        []func(qdCtx *QDMyInterfaceContext, ss *SI) *SI
+	implXGet2       []func(qdCtx *QDMyInterfaceContext, ss *XI) *XI
+	implinternal    []func(qdCtx *QDMyInterfaceContext) bool
 }
 
 type QDMyInterfaceOption[T any, X II] func(*qdMyInterface[T, X])
@@ -46,84 +53,174 @@ func NewQDMyInterface[T any, X II](options ...QDMyInterfaceOption[T, X]) MyInter
 
 // CloseNotify implements [main.MyInterface.CloseNotify].
 func (d *qdMyInterface[T, X]) CloseNotify() <-chan bool {
-	if d.implCloseNotify == nil && d.fallback != nil {
+	const methodName = "CloseNotify"
+	for _, impl := range d.implCloseNotify {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.CloseNotify()
 	}
-	return d.implCloseNotify(d.createContext("CloseNotify", d.implCloseNotify == nil))
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // Data implements [main.MyInterface.Data].
 func (d *qdMyInterface[T, X]) Data() {
-	if d.implData == nil && d.fallback != nil {
+	const methodName = "Data"
+	for _, impl := range d.implData {
+		qctx := d.createContext(methodName)
+		impl(qctx)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return
+		}
+	}
+	if d.fallback != nil {
 		d.fallback.Data()
 		return
 	}
-	d.implData(d.createContext("Data", d.implData == nil))
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // Get implements [main.MyInterface.Get].
-func (d *qdMyInterface[T, X]) Get(ctx context.Context, name string) (T, error) {
-	if d.implGet == nil && d.fallback != nil {
+func (d *qdMyInterface[T, X]) Get(ctx context.Context, name string) (x1 T, err error) {
+	const methodName = "Get"
+	for _, impl := range d.implGet {
+		qctx := d.createContext(methodName)
+		r0, r1 := impl(qctx, ctx, name)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0, r1
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.Get(ctx, name)
 	}
-	return d.implGet(d.createContext("Get", d.implGet == nil), ctx, name)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // Other implements [main.MyInterface.Other].
 func (d *qdMyInterface[T, X]) Other(si SecondInterface) int {
-	if d.implOther == nil && d.fallback != nil {
+	const methodName = "Other"
+	for _, impl := range d.implOther {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx, si)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.Other(si)
 	}
-	return d.implOther(d.createContext("Other", d.implOther == nil), si)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // Other2 implements [main.MyInterface.Other2].
 func (d *qdMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
-	if d.implOther2 == nil && d.fallback != nil {
+	const methodName = "Other2"
+	for _, impl := range d.implOther2 {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx, ti)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.Other2(ti)
 	}
-	return d.implOther2(d.createContext("Other2", d.implOther2 == nil), ti)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // Set implements [main.MyInterface.Set].
 func (d *qdMyInterface[T, X]) Set(ctx context.Context, name string, value T) error {
-	if d.implSet == nil && d.fallback != nil {
+	const methodName = "Set"
+	for _, impl := range d.implSet {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx, ctx, name, value)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.Set(ctx, name, value)
 	}
-	return d.implSet(d.createContext("Set", d.implSet == nil), ctx, name, value)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // Unnamed implements [main.MyInterface.Unnamed].
 func (d *qdMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
-	if d.implUnnamed == nil && d.fallback != nil {
+	const methodName = "Unnamed"
+	for _, impl := range d.implUnnamed {
+		qctx := d.createContext(methodName)
+		impl(qctx, p0, p1)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return
+		}
+	}
+	if d.fallback != nil {
 		d.fallback.Unnamed(p0, p1)
 		return
 	}
-	d.implUnnamed(d.createContext("Unnamed", d.implUnnamed == nil), p0, p1)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // XGet implements [main.MyInterface.XGet].
 func (d *qdMyInterface[T, X]) XGet(ss *SI) *SI {
-	if d.implXGet == nil && d.fallback != nil {
+	const methodName = "XGet"
+	for _, impl := range d.implXGet {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx, ss)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.XGet(ss)
 	}
-	return d.implXGet(d.createContext("XGet", d.implXGet == nil), ss)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // XGet2 implements [main.MyInterface.XGet2].
 func (d *qdMyInterface[T, X]) XGet2(ss *XI) *XI {
-	if d.implXGet2 == nil && d.fallback != nil {
+	const methodName = "XGet2"
+	for _, impl := range d.implXGet2 {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx, ss)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.XGet2(ss)
 	}
-	return d.implXGet2(d.createContext("XGet2", d.implXGet2 == nil), ss)
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 // internal implements [main.MyInterface.internal].
 func (d *qdMyInterface[T, X]) internal() bool {
-	if d.implinternal == nil && d.fallback != nil {
+	const methodName = "internal"
+	for _, impl := range d.implinternal {
+		qctx := d.createContext(methodName)
+		r0 := impl(qctx)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.internal()
 	}
-	return d.implinternal(d.createContext("internal", d.implinternal == nil))
+	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
 }
 
 func (d *qdMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -134,19 +231,17 @@ func (d *qdMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *qdMyInterface[T, X]) checkCallMethod(methodName string, implIsNil bool) (count int) {
-	if implIsNil {
-		panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
-	}
+func (d *qdMyInterface[T, X]) addCallMethod(methodName string) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	d.execCount[methodName]++
-	return d.execCount[methodName]
 }
 
-func (d *qdMyInterface[T, X]) createContext(methodName string, implIsNil bool) *QDMyInterfaceContext {
+func (d *qdMyInterface[T, X]) createContext(methodName string) *QDMyInterfaceContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &QDMyInterfaceContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.DataQDII}
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	return &QDMyInterfaceContext{ExecCount: d.execCount[methodName], CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.DataQDII}
 }
 
 // Options
@@ -165,69 +260,69 @@ func WithFallback[T any, X II](fallback MyInterface[T, X]) QDMyInterfaceOption[T
 // WithCloseNotify implements [main.MyInterface.CloseNotify].
 func WithCloseNotify[T any, X II](implCloseNotify func(qdCtx *QDMyInterfaceContext) <-chan bool) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implCloseNotify = implCloseNotify
+		d.implCloseNotify = append(d.implCloseNotify, implCloseNotify)
 	}
 }
 
 // WithData implements [main.MyInterface.Data].
 func WithData[T any, X II](implData func(qdCtx *QDMyInterfaceContext)) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implData = implData
+		d.implData = append(d.implData, implData)
 	}
 }
 
 // WithGet implements [main.MyInterface.Get].
-func WithGet[T any, X II](implGet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (T, error)) QDMyInterfaceOption[T, X] {
+func WithGet[T any, X II](implGet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (x1 T, err error)) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implGet = implGet
+		d.implGet = append(d.implGet, implGet)
 	}
 }
 
 // WithOther implements [main.MyInterface.Other].
 func WithOther[T any, X II](implOther func(qdCtx *QDMyInterfaceContext, si SecondInterface) int) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implOther = implOther
+		d.implOther = append(d.implOther, implOther)
 	}
 }
 
 // WithOther2 implements [main.MyInterface.Other2].
 func WithOther2[T any, X II](implOther2 func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implOther2 = implOther2
+		d.implOther2 = append(d.implOther2, implOther2)
 	}
 }
 
 // WithSet implements [main.MyInterface.Set].
 func WithSet[T any, X II](implSet func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implSet = implSet
+		d.implSet = append(d.implSet, implSet)
 	}
 }
 
 // WithUnnamed implements [main.MyInterface.Unnamed].
 func WithUnnamed[T any, X II](implUnnamed func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implUnnamed = implUnnamed
+		d.implUnnamed = append(d.implUnnamed, implUnnamed)
 	}
 }
 
 // WithXGet implements [main.MyInterface.XGet].
 func WithXGet[T any, X II](implXGet func(qdCtx *QDMyInterfaceContext, ss *SI) *SI) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implXGet = implXGet
+		d.implXGet = append(d.implXGet, implXGet)
 	}
 }
 
 // WithXGet2 implements [main.MyInterface.XGet2].
 func WithXGet2[T any, X II](implXGet2 func(qdCtx *QDMyInterfaceContext, ss *XI) *XI) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implXGet2 = implXGet2
+		d.implXGet2 = append(d.implXGet2, implXGet2)
 	}
 }
 
 // Withinternal implements [main.MyInterface.internal].
 func Withinternal[T any, X II](implinternal func(qdCtx *QDMyInterfaceContext) bool) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
-		d.implinternal = implinternal
+		d.implinternal = append(d.implinternal, implinternal)
 	}
 }

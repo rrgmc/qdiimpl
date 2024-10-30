@@ -13,6 +13,10 @@ func main() {
 	d := NewQDSampleData(
 		WithQDData(&idata.IData{Name: "xname", Value: "xvalue"}),
 		WithQDGet(func(qdCtx *QDSampleDataContext, name string) (any, error) {
+			qdCtx.NotSupported() // will ignore return values and call the next handler
+			return nil, nil
+		}),
+		WithQDGet(func(qdCtx *QDSampleDataContext, name string) (any, error) {
 			if name == qdCtx.Data.Name {
 				return qdCtx.Data.Value, nil
 			}

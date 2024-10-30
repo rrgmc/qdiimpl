@@ -9,17 +9,24 @@ import (
 )
 
 type ReaderContext struct {
-	ExecCount  int
-	CallerFunc string
-	CallerFile string
-	CallerLine int
+	ExecCount      int
+	CallerFunc     string
+	CallerFile     string
+	CallerLine     int
+	isNotSupported bool
+}
+
+// NotSupported should be called if the current callback don't support the passed arguments.
+// The function return values will be ignored.
+func (c *ReaderContext) NotSupported() {
+	c.isNotSupported = true
 }
 
 type Reader struct {
 	lock      sync.Mutex
 	execCount map[string]int
 	fallback  io.Reader
-	implRead  func(qdCtx *ReaderContext, p []byte) (n int, err error)
+	implRead  []func(qdCtx *ReaderContext, p []byte) (n int, err error)
 }
 
 var _ io.Reader = (*Reader)(nil)
@@ -36,10 +43,19 @@ func NewReader(options ...ReaderOption) io.Reader {
 
 // Read implements [io.Reader.Read].
 func (d *Reader) Read(p []byte) (n int, err error) {
-	if d.implRead == nil && d.fallback != nil {
+	const methodName = "Read"
+	for _, impl := range d.implRead {
+		qctx := d.createContext(methodName)
+		r0, r1 := impl(qctx, p)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0, r1
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.Read(p)
 	}
-	return d.implRead(d.createContext("Read", d.implRead == nil), p)
+	panic(fmt.Errorf("[Reader] method '%s' not implemented", methodName))
 }
 
 func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -50,19 +66,17 @@ func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *Reader) checkCallMethod(methodName string, implIsNil bool) (count int) {
-	if implIsNil {
-		panic(fmt.Errorf("[Reader] method '%s' not implemented", methodName))
-	}
+func (d *Reader) addCallMethod(methodName string) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	d.execCount[methodName]++
-	return d.execCount[methodName]
 }
 
-func (d *Reader) createContext(methodName string, implIsNil bool) *ReaderContext {
+func (d *Reader) createContext(methodName string) *ReaderContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &ReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	return &ReaderContext{ExecCount: d.execCount[methodName], CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
 }
 
 // Options
@@ -76,6 +90,6 @@ func WithFallback(fallback io.Reader) ReaderOption {
 // WithRead implements [io.Reader.Read].
 func WithRead(implRead func(qdCtx *ReaderContext, p []byte) (n int, err error)) ReaderOption {
 	return func(d *Reader) {
-		d.implRead = implRead
+		d.implRead = append(d.implRead, implRead)
 	}
 }

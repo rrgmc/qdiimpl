@@ -9,11 +9,18 @@ import (
 )
 
 type QDSampleDataContext struct {
-	ExecCount  int
-	CallerFunc string
-	CallerFile string
-	CallerLine int
-	Data       *idata.IData
+	ExecCount      int
+	CallerFunc     string
+	CallerFile     string
+	CallerLine     int
+	isNotSupported bool
+	Data           *idata.IData
+}
+
+// NotSupported should be called if the current callback don't support the passed arguments.
+// The function return values will be ignored.
+func (c *QDSampleDataContext) NotSupported() {
+	c.isNotSupported = true
 }
 
 type QDSampleData struct {
@@ -22,7 +29,7 @@ type QDSampleData struct {
 	lock      sync.Mutex
 	execCount map[string]int
 	fallback  SampleData
-	implGet   func(qdCtx *QDSampleDataContext, name string) (any, error)
+	implGet   []func(qdCtx *QDSampleDataContext, name string) (any, error)
 }
 
 var _ SampleData = (*QDSampleData)(nil)
@@ -39,10 +46,19 @@ func NewQDSampleData(options ...QDSampleDataOption) *QDSampleData {
 
 // Get implements [main.SampleData.Get].
 func (d *QDSampleData) Get(name string) (any, error) {
-	if d.implGet == nil && d.fallback != nil {
+	const methodName = "Get"
+	for _, impl := range d.implGet {
+		qctx := d.createContext(methodName)
+		r0, r1 := impl(qctx, name)
+		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
+			return r0, r1
+		}
+	}
+	if d.fallback != nil {
 		return d.fallback.Get(name)
 	}
-	return d.implGet(d.createContext("Get", d.implGet == nil), name)
+	panic(fmt.Errorf("[QDSampleData] method '%s' not implemented", methodName))
 }
 
 func (d *QDSampleData) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -53,19 +69,17 @@ func (d *QDSampleData) getCallerFuncName(skip int) (funcName string, file string
 	return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *QDSampleData) checkCallMethod(methodName string, implIsNil bool) (count int) {
-	if implIsNil {
-		panic(fmt.Errorf("[QDSampleData] method '%s' not implemented", methodName))
-	}
+func (d *QDSampleData) addCallMethod(methodName string) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	d.execCount[methodName]++
-	return d.execCount[methodName]
 }
 
-func (d *QDSampleData) createContext(methodName string, implIsNil bool) *QDSampleDataContext {
+func (d *QDSampleData) createContext(methodName string) *QDSampleDataContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-	return &QDSampleDataContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	return &QDSampleDataContext{ExecCount: d.execCount[methodName], CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
 }
 
 // Options
@@ -84,6 +98,6 @@ func WithQDFallback(fallback SampleData) QDSampleDataOption {
 // WithQDGet implements [main.SampleData.Get].
 func WithQDGet(implGet func(qdCtx *QDSampleDataContext, name string) (any, error)) QDSampleDataOption {
 	return func(d *QDSampleData) {
-		d.implGet = implGet
+		d.implGet = append(d.implGet, implGet)
 	}
 }
