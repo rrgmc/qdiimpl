@@ -310,96 +310,68 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				sigParam := sig.Results().At(k)
 				rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 			}
-		}).Block(
-			Do(func(s *Statement) {
-				s.Add(Const().Id("methodName").Op("=").Lit(mtd.Name()))
-				s.Line()
+		}).BlockFunc(func(s *Group) {
+			s.Add(Const().Id("methodName").Op("=").Lit(mtd.Name()))
+			s.Line()
 
-				s.Add(For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
-					BlockFunc(func(fgroup *Group) {
-						fgroup.Id("qctx").Op(":=").Id("d").Dot("createContext").Call(Id("methodName"))
+			s.Add(For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
+				BlockFunc(func(fgroup *Group) {
+					fgroup.Id("qctx").Op(":=").Id("d").Dot("createContext").Call(Id("methodName"))
 
-						call := Id("impl").CallFunc(func(cgroup *Group) {
-							cgroup.Id("qctx")
-							for k := 0; k < sig.Params().Len(); k++ {
-								sigParam := sig.Params().At(k)
-								cgroup.Id(util.ParamName(k, sigParam))
-							}
-						})
-
-						if sig.Results().Len() == 0 {
-							fgroup.Add(call)
-						} else {
-							fgroup.Add(ListFunc(func(fgroup *Group) {
-								for k := 0; k < sig.Results().Len(); k++ {
-									fgroup.Id(fmt.Sprintf("r%d", k))
-								}
-							}).Op(":=").Add(call))
-						}
-
-						// fgroup.ListFunc(func(fgroup *Group) {
-						// 	for k := 0; k < sig.Results().Len(); k++ {
-						// 		fgroup.Id(fmt.Sprintf("r%d", k))
-						// 	}
-						// }).Op(":=").CallFunc(func(cgroup *Group) {
-						// 	cgroup.Id("qctx")
-						// 	for k := 0; k < sig.Params().Len(); k++ {
-						// 		sigParam := sig.Params().At(k)
-						// 		cgroup.Id(util.ParamName(k, sigParam))
-						// 	}
-						// })
-						fgroup.If(Op("!").Id("qctx").Dot("isNotSupported")).
-							BlockFunc(func(rgroup *Group) {
-								rgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
-								rgroup.ReturnFunc(func(retgroup *Group) {
-									if sig.Results().Len() == 0 {
-										return
-									}
-									retgroup.ListFunc(func(retlgroup *Group) {
-										for k := 0; k < sig.Results().Len(); k++ {
-											retlgroup.Id(fmt.Sprintf("r%d", k))
-										}
-									})
-								})
-							})
-					}))
-
-				s.Line()
-				s.Add(If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
-					icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
+					call := Id("impl").CallFunc(func(cgroup *Group) {
+						cgroup.Id("qctx")
 						for k := 0; k < sig.Params().Len(); k++ {
 							sigParam := sig.Params().At(k)
-							igroup.Id(util.ParamName(k, sigParam))
+							cgroup.Id(util.ParamName(k, sigParam))
 						}
 					})
+
 					if sig.Results().Len() == 0 {
-						bgroup.Add(icall)
-						bgroup.Return()
+						fgroup.Add(call)
 					} else {
-						bgroup.Add(Return(icall))
+						fgroup.Add(ListFunc(func(fgroup *Group) {
+							for k := 0; k < sig.Results().Len(); k++ {
+								fgroup.Id(fmt.Sprintf("r%d", k))
+							}
+						}).Op(":=").Add(call))
 					}
+
+					fgroup.If(Op("!").Id("qctx").Dot("isNotSupported")).
+						BlockFunc(func(rgroup *Group) {
+							rgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
+							rgroup.ReturnFunc(func(retgroup *Group) {
+								if sig.Results().Len() == 0 {
+									return
+								}
+								retgroup.ListFunc(func(retlgroup *Group) {
+									for k := 0; k < sig.Results().Len(); k++ {
+										retlgroup.Id(fmt.Sprintf("r%d", k))
+									}
+								})
+							})
+						})
 				}))
-				s.Line()
 
-				s.Add(Panic(Qual("fmt", "Errorf").
-					Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))))
+			s.Line()
+			s.Add(If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
+				icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
+					for k := 0; k < sig.Params().Len(); k++ {
+						sigParam := sig.Params().At(k)
+						igroup.Id(util.ParamName(k, sigParam))
+					}
+				})
+				if sig.Results().Len() == 0 {
+					bgroup.Add(icall)
+					bgroup.Return()
+				} else {
+					bgroup.Add(Return(icall))
+				}
+			}))
+			s.Line()
 
-				// call := Id("d").Dot("impl" + mtd.Name()).CallFunc(func(cgroup *Group) {
-				// 	cgroup.Id("d").Dot("createContext").Call(
-				// 		Lit(mtd.Name()), Id("d").Dot("impl"+mtd.Name()).Op("==").Nil(),
-				// 	)
-				// 	for k := 0; k < sig.Params().Len(); k++ {
-				// 		sigParam := sig.Params().At(k)
-				// 		cgroup.Id(util.ParamName(k, sigParam))
-				// 	}
-				// })
-				// if sig.Results().Len() == 0 {
-				// 	s.Add(call)
-				// } else {
-				// 	s.Add(Return(call))
-				// }
-			}),
-		)
+			s.Add(Panic(Qual("fmt", "Errorf").
+				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))))
+		})
 	}
 
 	// helper methods
