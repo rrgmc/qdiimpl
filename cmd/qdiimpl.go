@@ -191,6 +191,8 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// # func (c *TYPEContext) NotSupported()
+	f.Comment("NotSupported should be called if the current callback don't support the passed arguments.")
+	f.Comment("The function return values will be ignored.")
 	f.Func().Params(Id("c").Op("*").Id(objContext)).
 		Id("NotSupported").
 		Params().
