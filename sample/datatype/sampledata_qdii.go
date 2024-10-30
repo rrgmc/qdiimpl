@@ -70,19 +70,19 @@ func (d *QDSampleData) createContext(methodName string, implIsNil bool) *QDSampl
 
 // Options
 
-func WithData(data *idata.IData) QDSampleDataOption {
+func WithQDSampleDataData(data *idata.IData) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.Data = data
 	}
 }
-func WithFallback(fallback SampleData) QDSampleDataOption {
+func WithQDSampleDataFallback(fallback SampleData) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.fallback = fallback
 	}
 }
 
-// WithGet implements [main.SampleData.Get].
-func WithGet(implGet func(qdCtx *QDSampleDataContext, name string) (any, error)) QDSampleDataOption {
+// WithQDSampleDataGet implements [main.SampleData.Get].
+func WithQDSampleDataGet(implGet func(qdCtx *QDSampleDataContext, name string) (any, error)) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.implGet = implGet
 	}
