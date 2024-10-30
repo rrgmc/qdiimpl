@@ -24,7 +24,7 @@ $ go run github.com/rrgmc/qdiimpl@latest -type=StorageClient
 Writing file storageclient_qdii.go...
 ```
 
-There is an option for each interface method called `WithQDTYPEMETHOD` to set a function that will be called when
+There is an option for each interface method called `WithMETHOD` to set a function that will be called when
 the method is called. If a method is called when a function is not set, the implementation panics with a useful
 message.
 
@@ -190,6 +190,9 @@ By default, the implementation struct name will have the same name as the source
 
 If the implementation will be generated in the same folder as the source interface, add the `-name-prefix=QD` option
 to prefix all generated data with a "QD" prefix.
+
+You may also need to use the `-option-prefix=true` options to make function option names be prefixed with the 
+interface name and name prefix, so `WithRead()` would become `WithQDReaderRead()`.
 
 ### QD Context
 

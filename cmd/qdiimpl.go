@@ -429,7 +429,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	if codeDataType != nil {
 		// WithData option
-		// # func WithQDTYPEData(data any) QDTYPEOption {}
+		// # func WithData(data any) QDTYPEOption {}
 		f.Func().Id("With" + objOptionPrefix + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
 			Id("data").Add(codeDataType),
 		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
@@ -440,7 +440,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	}
 
 	// WithFallback option
-	// # func WithQDTYPEFallback(fallback SOURCETYPE) QDTYPEOption {}
+	// # func WithFallback(fallback SOURCETYPE) QDTYPEOption {}
 	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).Params(
 		Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)),
 	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
@@ -456,7 +456,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 		f.Line()
 
-		// # func WithQDTYPEMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
+		// # func WithMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
 		f.Commentf("With%s%s implements [%s.%s].", objOptionPrefix, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Id("With" + objOptionPrefix + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
