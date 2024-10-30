@@ -176,18 +176,27 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	codeObjectTypesWithType := util.AddTypeParamsList(objNamedType.TypeParams(), true)
 
 	// QD Context
-	// # type QDTYPEContext struct {}
+	// # type TYPEContext struct {}
 	f.Type().Id(objContext).
 		StructFunc(func(sgroup *Group) {
 			sgroup.Id("ExecCount").Int()
 			sgroup.Id("CallerFunc").String()
 			sgroup.Id("CallerFile").String()
 			sgroup.Id("CallerLine").Int()
+			sgroup.Id("isNotSupported").Bool()
 			if codeDataType != nil {
 				sgroup.Id("Data").Add(codeDataType)
 			}
 		})
 	f.Line()
+
+	// # func (c *TYPEContext) NotSupported()
+	f.Func().Params(Id("c").Op("*").Id(objContext)).
+		Id("NotSupported").
+		Params().
+		Block(
+			Id("c").Dot("isNotSupported").Op("=").True(),
+		)
 
 	// Struct implementation
 	// # type QDTYPE struct {}
@@ -215,7 +224,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				sig := mtd.Type().(*types.Signature)
 
 				// # implMETHOD  func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)
-				group.Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
+				group.Id("impl" + mtd.Name()).Index().Func().ParamsFunc(func(pgroup *Group) {
 					// add qd context parameter
 					qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
 						for k := 0; k < sig.Params().Len(); k++ {
@@ -303,9 +312,60 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 		}).Block(
 			Do(func(s *Statement) {
-				s.If(Id("d").Dot("impl" + mtd.Name()).Op("==").Nil().
-					Op("&&").
-					Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
+				s.Add(Const().Id("methodName").Op("=").Lit(mtd.Name()))
+				s.Line()
+
+				s.Add(For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
+					BlockFunc(func(fgroup *Group) {
+						fgroup.Id("qctx").Op(":=").Id("d").Dot("createContext").Call(Id("methodName"))
+
+						call := Id("impl").CallFunc(func(cgroup *Group) {
+							cgroup.Id("qctx")
+							for k := 0; k < sig.Params().Len(); k++ {
+								sigParam := sig.Params().At(k)
+								cgroup.Id(util.ParamName(k, sigParam))
+							}
+						})
+
+						if sig.Results().Len() == 0 {
+							fgroup.Add(call)
+						} else {
+							fgroup.Add(ListFunc(func(fgroup *Group) {
+								for k := 0; k < sig.Results().Len(); k++ {
+									fgroup.Id(fmt.Sprintf("r%d", k))
+								}
+							}).Op(":=").Add(call))
+						}
+
+						// fgroup.ListFunc(func(fgroup *Group) {
+						// 	for k := 0; k < sig.Results().Len(); k++ {
+						// 		fgroup.Id(fmt.Sprintf("r%d", k))
+						// 	}
+						// }).Op(":=").CallFunc(func(cgroup *Group) {
+						// 	cgroup.Id("qctx")
+						// 	for k := 0; k < sig.Params().Len(); k++ {
+						// 		sigParam := sig.Params().At(k)
+						// 		cgroup.Id(util.ParamName(k, sigParam))
+						// 	}
+						// })
+						fgroup.If(Op("!").Id("qctx").Dot("isNotSupported")).
+							BlockFunc(func(rgroup *Group) {
+								rgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
+								rgroup.ReturnFunc(func(retgroup *Group) {
+									if sig.Results().Len() == 0 {
+										return
+									}
+									retgroup.ListFunc(func(retlgroup *Group) {
+										for k := 0; k < sig.Results().Len(); k++ {
+											retlgroup.Id(fmt.Sprintf("r%d", k))
+										}
+									})
+								})
+							})
+					}))
+
+				s.Line()
+				s.Add(If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
 					icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
 						for k := 0; k < sig.Params().Len(); k++ {
 							sigParam := sig.Params().At(k)
@@ -318,23 +378,26 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					} else {
 						bgroup.Add(Return(icall))
 					}
-				})
+				}))
 				s.Line()
 
-				call := Id("d").Dot("impl" + mtd.Name()).CallFunc(func(cgroup *Group) {
-					cgroup.Id("d").Dot("createContext").Call(
-						Lit(mtd.Name()), Id("d").Dot("impl"+mtd.Name()).Op("==").Nil(),
-					)
-					for k := 0; k < sig.Params().Len(); k++ {
-						sigParam := sig.Params().At(k)
-						cgroup.Id(util.ParamName(k, sigParam))
-					}
-				})
-				if sig.Results().Len() == 0 {
-					s.Add(call)
-				} else {
-					s.Add(Return(call))
-				}
+				s.Add(Panic(Qual("fmt", "Errorf").
+					Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))))
+
+				// call := Id("d").Dot("impl" + mtd.Name()).CallFunc(func(cgroup *Group) {
+				// 	cgroup.Id("d").Dot("createContext").Call(
+				// 		Lit(mtd.Name()), Id("d").Dot("impl"+mtd.Name()).Op("==").Nil(),
+				// 	)
+				// 	for k := 0; k < sig.Params().Len(); k++ {
+				// 		sigParam := sig.Params().At(k)
+				// 		cgroup.Id(util.ParamName(k, sigParam))
+				// 	}
+				// })
+				// if sig.Results().Len() == 0 {
+				// 	s.Add(call)
+				// } else {
+				// 	s.Add(Return(call))
+				// }
 			}),
 		)
 	}
@@ -368,38 +431,27 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	f.Line()
 
-	// checkCallMethod
-	// # func (d *QDTYPE) checkCallMethod(methodName string, implIsNil bool) (count int) {}
+	// addCallMethod
+	// # func (d *QDTYPE) addCallMethod(methodName string) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
-		Id("checkCallMethod").
+		Id("addCallMethod").
 		Params(
 			Id("methodName").String(),
-			Id("implIsNil").Bool(),
-		).
-		Params(
-			Id("count").Int(),
 		).
 		BlockFunc(func(bgroup *Group) {
-			bgroup.If(Id("implIsNil")).Block(
-				Panic(Qual("fmt", "Errorf").
-					Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))),
-			)
 			bgroup.Id("d").Dot("lock").Dot("Lock").Call()
 			bgroup.Defer().Id("d").Dot("lock").Dot("Unlock").Call()
-
 			bgroup.Id("d").Dot("execCount").Index(Id("methodName")).Op("++")
-			bgroup.Return(Id("d").Dot("execCount").Index(Id("methodName")))
 		})
 
 	f.Line()
 
 	// createContext
-	// # func (d *QDTYPE) createContext(methodName string, implIsNil bool) *QDTYPEContext {}
+	// # func (d *TYPE) createContext(methodName string) *TYPEContext {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("createContext").
 		Params(
 			Id("methodName").String(),
-			Id("implIsNil").Bool(),
 		).
 		Params(
 			Op("*").Id(objContext),
@@ -407,10 +459,12 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		Block(
 			List(Id("callerFunc"), Id("callerFile"), Id("callerLine")).Op(":=").
 				Id("d").Dot("getCallerFuncName").Call(Lit(3)),
+			Id("d").Dot("lock").Dot("Lock").Call(),
+			Defer().Id("d").Dot("lock").Dot("Unlock").Call(),
 			Return(
 				Op("&").Id(objContext).ValuesFunc(func(vgroup *Group) {
 					vgroup.Id("ExecCount").Op(":").Id("d").
-						Dot("checkCallMethod").Call(Id("methodName"), Id("implIsNil"))
+						Dot("execCount").Index(Id("methodName"))
 					vgroup.Id("CallerFunc").Op(":").Id("callerFunc")
 					vgroup.Id("CallerFile").Op(":").Id("callerFile")
 					vgroup.Id("CallerLine").Op(":").Id("callerLine")
@@ -479,7 +533,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}),
 		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
 			Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
-				Id("d").Dot("impl" + mtd.Name()).Op("=").Id("impl" + mtd.Name()),
+				Id("d").Dot("impl"+mtd.Name()).Op("=").Append(Id("d").Dot("impl"+mtd.Name()), Id("impl"+mtd.Name())),
 			)),
 		)
 	}
