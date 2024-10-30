@@ -49,6 +49,11 @@ func GetQualCode(typ types.Type) *jen.Statement {
 				return st.Add(jen.Qual(tt.Obj().Pkg().Path(), tt.Obj().Name()).TypesFunc(AddTypeList(tt.TypeArgs())))
 			}
 			return st.Add(jen.Id(tt.Obj().Name()).TypesFunc(AddTypeList(tt.TypeArgs())))
+		case *types.Alias:
+			if tt.Obj().Pkg() != nil {
+				return st.Add(jen.Qual(tt.Obj().Pkg().Path(), tt.Obj().Name()).TypesFunc(AddTypeList(tt.TypeArgs())))
+			}
+			return st.Add(jen.Id(tt.Obj().Name()).TypesFunc(AddTypeList(tt.TypeArgs())))
 		case *types.TypeParam:
 			return st.Add(jen.Id(tt.Obj().Name()))
 		case *types.Signature:
