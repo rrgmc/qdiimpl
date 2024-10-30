@@ -325,29 +325,25 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 						}
 					})
 
+					var retVars []Code
+					for k := 0; k < sig.Results().Len(); k++ {
+						retVars = append(retVars, Id(fmt.Sprintf("r%d", k)))
+					}
+
 					if sig.Results().Len() == 0 {
 						fgroup.Add(call)
 					} else {
-						fgroup.Add(ListFunc(func(fgroup *Group) {
-							for k := 0; k < sig.Results().Len(); k++ {
-								fgroup.Id(fmt.Sprintf("r%d", k))
-							}
-						}).Op(":=").Add(call))
+						fgroup.List(retVars...).Op(":=").Add(call)
 					}
 
 					fgroup.If(Op("!").Id("qctx").Dot("isNotSupported")).
 						BlockFunc(func(rgroup *Group) {
 							rgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
-							rgroup.ReturnFunc(func(retgroup *Group) {
-								if sig.Results().Len() == 0 {
-									return
-								}
-								retgroup.ListFunc(func(retlgroup *Group) {
-									for k := 0; k < sig.Results().Len(); k++ {
-										retlgroup.Id(fmt.Sprintf("r%d", k))
-									}
-								})
-							})
+							if sig.Results().Len() == 0 {
+								rgroup.Return()
+							} else {
+								rgroup.Return(List(retVars...))
+							}
 						})
 				})
 
