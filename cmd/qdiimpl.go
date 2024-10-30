@@ -19,12 +19,13 @@ var (
 	typePackageName  = flag.String("type-package", "", "type package path if not the current directory")
 	forcePackageName = flag.String("force-package-name", "", "force generated package name")
 	samePackage      = flag.Bool("same-package", true, "if false will import source package and qualify the types")
-	namePrefix       = flag.String("name-prefix", "QD", "interface name prefix")
+	namePrefix       = flag.String("name-prefix", "", "interface name prefix")
 	nameSuffix       = flag.String("name-suffix", "", "interface name suffix (default blank)")
 	dataType         = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
 	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
 	doSync           = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
+	optionPrefix     = flag.Bool("option-prefix", false, "whether to prefix the method option names with the interface name")
 	exportType       = flag.Bool("export-type", false, "whether to export the generated type (default false)")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
 )
@@ -140,6 +141,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	objNameExported := uprefix + obj.Name() + *nameSuffix
 	objContext := objNameExported + "Context"
 	objOption := objNameExported + "Option"
+	objOptionPrefix := objNameExported
+	if !*optionPrefix {
+		objOptionPrefix = ""
+	}
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
@@ -425,7 +430,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	if codeDataType != nil {
 		// WithData option
 		// # func WithQDTYPEData(data any) QDTYPEOption {}
-		f.Func().Id("With" + objNameExported + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
+		f.Func().Id("With" + objOptionPrefix + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
 			Id("data").Add(codeDataType),
 		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
 			Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
@@ -436,7 +441,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	// WithFallback option
 	// # func WithQDTYPEFallback(fallback SOURCETYPE) QDTYPEOption {}
-	f.Func().Id("With" + objNameExported + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).Params(
+	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).Params(
 		Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)),
 	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
 		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
@@ -452,8 +457,8 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Line()
 
 		// # func WithQDTYPEMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
-		f.Commentf("With%s%s implements [%s.%s].", objNameExported, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
-		f.Func().Id("With" + objNameExported + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
+		f.Commentf("With%s%s implements [%s.%s].", objOptionPrefix, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
+		f.Func().Id("With" + objOptionPrefix + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add qd context parameter
 				qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {

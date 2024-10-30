@@ -5,11 +5,11 @@ import (
 	"io"
 )
 
-// -type=Reader -type-package=io -overwrite=true -force-package-name=main
+// -type=Reader -type-package=io -overwrite=true -force-package-name=main -name-prefix=QD
 
 func main() {
 	reader := NewQDReader(
-		WithQDReaderRead(func(qdCtx *QDReaderContext, p []byte) (n int, err error) {
+		WithRead(func(qdCtx *QDReaderContext, p []byte) (n int, err error) {
 			n = copy(p, []byte("test"))
 			return n, nil
 		}),

@@ -11,14 +11,14 @@ type IIImpl struct {
 func (I IIImpl) Setme() {
 }
 
-// -type=MyInterface -data-type=any -overwrite=true
+// -type=MyInterface -data-type=any -overwrite=true -name-prefix=QD
 
 func main() {
 	data := 12
 
 	x := NewQDMyInterface[string, IIImpl](
-		WithQDMyInterfaceDataQDII[string, IIImpl](&data),
-		WithQDMyInterfaceGet[string, IIImpl](func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (string, error) {
+		WithDataQDII[string, IIImpl](&data),
+		WithGet[string, IIImpl](func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (string, error) {
 			d := qdCtx.Data.(*int)
 			*d++
 			return fmt.Sprintf("a%v", *d), nil

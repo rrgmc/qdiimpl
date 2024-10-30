@@ -67,14 +67,14 @@ func (d *qdReader) createContext(methodName string, implIsNil bool) *QDReaderCon
 
 // Options
 
-func WithQDReaderFallback(fallback io.Reader) QDReaderOption {
+func WithFallback(fallback io.Reader) QDReaderOption {
 	return func(d *qdReader) {
 		d.fallback = fallback
 	}
 }
 
-// WithQDReaderRead implements [io.Reader.Read].
-func WithQDReaderRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
+// WithRead implements [io.Reader.Read].
+func WithRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
 	return func(d *qdReader) {
 		d.implRead = implRead
 	}

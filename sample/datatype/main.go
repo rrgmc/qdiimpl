@@ -7,12 +7,12 @@ import (
 	"github.com/rrgmc/qdiimpl/sample/datatype/idata"
 )
 
-// -type=SampleData -data-type="*github.com/rrgmc/qdiimpl/sample/datatype/idata.IData" -export-type=true -overwrite=true
+// -type=SampleData -data-type="*github.com/rrgmc/qdiimpl/sample/datatype/idata.IData" -export-type=true -overwrite=true -name-prefix=QD
 
 func main() {
 	d := NewQDSampleData(
-		WithQDSampleDataData(&idata.IData{Name: "xname", Value: "xvalue"}),
-		WithQDSampleDataGet(func(qdCtx *QDSampleDataContext, name string) (any, error) {
+		WithData(&idata.IData{Name: "xname", Value: "xvalue"}),
+		WithGet(func(qdCtx *QDSampleDataContext, name string) (any, error) {
 			if name == qdCtx.Data.Name {
 				return qdCtx.Data.Value, nil
 			}
