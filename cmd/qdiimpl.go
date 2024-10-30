@@ -311,10 +311,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 			}
 		}).BlockFunc(func(s *Group) {
-			s.Add(Const().Id("methodName").Op("=").Lit(mtd.Name()))
-			s.Line()
+			s.Const().Id("methodName").Op("=").Lit(mtd.Name())
 
-			s.Add(For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
+			s.For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
 				BlockFunc(func(fgroup *Group) {
 					fgroup.Id("qctx").Op(":=").Id("d").Dot("createContext").Call(Id("methodName"))
 
@@ -350,10 +349,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 								})
 							})
 						})
-				}))
+				})
 
-			s.Line()
-			s.Add(If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
+			s.If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
 				icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
@@ -366,11 +364,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				} else {
 					bgroup.Add(Return(icall))
 				}
-			}))
-			s.Line()
+			})
 
-			s.Add(Panic(Qual("fmt", "Errorf").
-				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName"))))
+			s.Panic(Qual("fmt", "Errorf").
+				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName")))
 		})
 	}
 
