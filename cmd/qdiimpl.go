@@ -20,12 +20,12 @@ var (
 	forcePackageName = flag.String("force-package-name", "", "force generated package name")
 	samePackage      = flag.Bool("same-package", true, "if false will import source package and qualify the types")
 	namePrefix       = flag.String("name-prefix", "", "interface name prefix")
-	nameSuffix       = flag.String("name-suffix", "", "interface name suffix (default blank)")
+	nameSuffix       = flag.String("name-suffix", "", "interface name suffix")
+	optionNamePrefix = flag.String("option-name-prefix", "", "option name prefix (WithXXXMethod)")
 	dataType         = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
 	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
 	doSync           = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
-	optionPrefix     = flag.Bool("option-prefix", false, "whether to prefix the method option names with the interface name")
 	exportType       = flag.Bool("export-type", false, "whether to export the generated type (default false)")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
 )
@@ -141,10 +141,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	objNameExported := uprefix + obj.Name() + *nameSuffix
 	objContext := objNameExported + "Context"
 	objOption := objNameExported + "Option"
-	objOptionPrefix := objNameExported
-	if !*optionPrefix {
-		objOptionPrefix = ""
-	}
+	objOptionPrefix := *optionNamePrefix
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 

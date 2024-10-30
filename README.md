@@ -43,9 +43,9 @@ Flags:
   -name-prefix string
         interface name prefix
   -name-suffix string
-        interface name suffix (default blank)
-  -option-prefix
-        whether to prefix the method option names with the interface name
+        interface name suffix
+  -option-name-prefix string
+        option name prefix (WithXXXMethod)
   -output string
         output file name; default srcdir/<type>_qdii.go
   -overwrite
@@ -191,8 +191,8 @@ By default, the implementation struct name will have the same name as the source
 If the implementation will be generated in the same folder as the source interface, add the `-name-prefix=QD` option
 to prefix all generated data with a "QD" prefix.
 
-You may also need to use the `-option-prefix=true` options to make function option names be prefixed with the 
-interface name and name prefix, so `WithRead()` would become `WithQDReaderRead()`.
+You may also need to use the `-option-name-prefix=QD` options to make function option names be prefixed, 
+so `WithRead()` would become `WithQDRead()`.
 
 ### QD Context
 
