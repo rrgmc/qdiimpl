@@ -83,25 +83,26 @@ import (
     "sync"
 )
 
-type QDReaderContext struct {
+type ReaderContext struct {
     ExecCount  int
     CallerFunc string
     CallerFile string
     CallerLine int
 }
 
-type qdReader struct {
+type Reader struct {
     lock      sync.Mutex
     execCount map[string]int
-    implRead  func(qdCtx *QDReaderContext, p []byte) (n int, err error)
+    fallback  io.Reader
+    implRead  func(qdCtx *ReaderContext, p []byte) (n int, err error)
 }
 
-var _ io.Reader = (*qdReader)(nil)
+var _ io.Reader = (*Reader)(nil)
 
-type QDReaderOption func(*qdReader)
+type ReaderOption func(*Reader)
 
-func NewQDReader(options ...QDReaderOption) io.Reader {
-    ret := &qdReader{execCount: map[string]int{}}
+func NewReader(options ...ReaderOption) io.Reader {
+    ret := &Reader{execCount: map[string]int{}}
     for _, opt := range options {
         opt(ret)
     }
@@ -109,11 +110,14 @@ func NewQDReader(options ...QDReaderOption) io.Reader {
 }
 
 // Read implements [io.Reader.Read].
-func (d *qdReader) Read(p []byte) (n int, err error) {
+func (d *Reader) Read(p []byte) (n int, err error) {
+    if d.implRead == nil && d.fallback != nil {
+        return d.fallback.Read(p)
+    }
     return d.implRead(d.createContext("Read", d.implRead == nil), p)
 }
 
-func (d *qdReader) getCallerFuncName(skip int) (funcName string, file string, line int) {
+func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line int) {
     counter, file, line, success := runtime.Caller(skip)
     if !success {
         panic("runtime.Caller failed")
@@ -121,9 +125,9 @@ func (d *qdReader) getCallerFuncName(skip int) (funcName string, file string, li
     return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *qdReader) checkCallMethod(methodName string, implIsNil bool) (count int) {
+func (d *Reader) checkCallMethod(methodName string, implIsNil bool) (count int) {
     if implIsNil {
-        panic(fmt.Errorf("[qdReader] method '%s' not implemented", methodName))
+        panic(fmt.Errorf("[Reader] method '%s' not implemented", methodName))
     }
     d.lock.Lock()
     defer d.lock.Unlock()
@@ -131,16 +135,22 @@ func (d *qdReader) checkCallMethod(methodName string, implIsNil bool) (count int
     return d.execCount[methodName]
 }
 
-func (d *qdReader) createContext(methodName string, implIsNil bool) *QDReaderContext {
+func (d *Reader) createContext(methodName string, implIsNil bool) *ReaderContext {
     callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-    return &QDReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
+    return &ReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
 }
 
 // Options
 
-// WithQDReaderRead implements [io.Reader.Read].
-func WithQDReaderRead(implRead func(qdCtx *QDReaderContext, p []byte) (n int, err error)) QDReaderOption {
-    return func(d *qdReader) {
+func WithFallback(fallback io.Reader) ReaderOption {
+    return func(d *Reader) {
+        d.fallback = fallback
+    }
+}
+
+// WithRead implements [io.Reader.Read].
+func WithRead(implRead func(qdCtx *ReaderContext, p []byte) (n int, err error)) ReaderOption {
+    return func(d *Reader) {
         d.implRead = implRead
     }
 }
@@ -150,8 +160,8 @@ Usage:
 
 ```go
 func main() {
-    reader := NewQDReader(
-        WithQDReaderRead(func(qdCtx *QDReaderContext, p []byte) (n int, err error) {
+    reader := NewReader(
+        WithReaderRead(func(qdCtx *ReaderContext, p []byte) (n int, err error) {
             n = copy(p, []byte("test"))
             return n, nil
         }),
@@ -174,6 +184,13 @@ func readInterface(r io.Reader) {
 
 # Details
 
+### Naming
+
+By default, the implementation struct name will have the same name as the source interface.
+
+If the implementation will be generated in the same folder as the source interface, add the `-name-prefix=QD` option
+to prefix all generated data with a "QD" prefix.
+
 ### QD Context
 
 Each method is passed a "QDContext" which contains these fields:
@@ -182,7 +199,7 @@ Each method is passed a "QDContext" which contains these fields:
 - `CallerFunc`: fully-qualified function name that called the interface method.
 - `CallerFile`: source file name of the function that called the interface method.
 - `CallerLine`: line number of the source file of the function that called the interface method.
-- `Data`: a custom data field set by `WithQDTYPEData` option. (only when `data-type` command line parameter is set)
+- `Data`: a custom data field set by `WithData` option. (only when `data-type` command line parameter is set)
 
 Use these properties to help detect where the method was called from and return different responses if needed.
 
