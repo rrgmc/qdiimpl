@@ -30,6 +30,7 @@ type qdMyInterface[T any, X II] struct {
 	implSet         func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
 	implUnnamed     func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)
 	implXGet        func(qdCtx *QDMyInterfaceContext, ss *SI) *SI
+	implXGet2       func(qdCtx *QDMyInterfaceContext, ss *XI) *XI
 	implinternal    func(qdCtx *QDMyInterfaceContext) bool
 }
 
@@ -107,6 +108,14 @@ func (d *qdMyInterface[T, X]) XGet(ss *SI) *SI {
 		return d.fallback.XGet(ss)
 	}
 	return d.implXGet(d.createContext("XGet", d.implXGet == nil), ss)
+}
+
+// XGet2 implements [main.MyInterface.XGet2].
+func (d *qdMyInterface[T, X]) XGet2(ss *XI) *XI {
+	if d.implXGet2 == nil && d.fallback != nil {
+		return d.fallback.XGet2(ss)
+	}
+	return d.implXGet2(d.createContext("XGet2", d.implXGet2 == nil), ss)
 }
 
 // internal implements [main.MyInterface.internal].
@@ -206,6 +215,13 @@ func WithUnnamed[T any, X II](implUnnamed func(qdCtx *QDMyInterfaceContext, p0 b
 func WithXGet[T any, X II](implXGet func(qdCtx *QDMyInterfaceContext, ss *SI) *SI) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
 		d.implXGet = implXGet
+	}
+}
+
+// WithXGet2 implements [main.MyInterface.XGet2].
+func WithXGet2[T any, X II](implXGet2 func(qdCtx *QDMyInterfaceContext, ss *XI) *XI) QDMyInterfaceOption[T, X] {
+	return func(d *qdMyInterface[T, X]) {
+		d.implXGet2 = implXGet2
 	}
 }
 
