@@ -41,9 +41,11 @@ Flags:
   -force-package-name string
         force generated package name
   -name-prefix string
-        interface name prefix (default "QD")
+        interface name prefix
   -name-suffix string
         interface name suffix (default blank)
+  -option-prefix
+        whether to prefix the method option names with the interface name
   -output string
         output file name; default srcdir/<type>_qdii.go
   -overwrite
