@@ -27,10 +27,11 @@ func (c *QDSampleDataContext) NotSupported() {
 type QDSampleData struct {
 	Data *idata.IData
 
-	lock      sync.Mutex
-	execCount map[string]int
-	fallback  SampleData
-	implGet   []func(qdCtx *QDSampleDataContext, name string) (any, error)
+	lock                   sync.Mutex
+	execCount              map[string]int
+	fallback               SampleData
+	onMethodNotImplemented func(qdCtx *QDSampleDataContext) error
+	implGet                []func(qdCtx *QDSampleDataContext, name string) (any, error)
 }
 
 var _ SampleData = (*QDSampleData)(nil)
@@ -91,6 +92,9 @@ func (d *QDSampleData) createContext(methodName string) *QDSampleDataContext {
 }
 
 func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext) error {
+	if d.onMethodNotImplemented != nil {
+		return d.onMethodNotImplemented(qdCtx)
+	}
 	return fmt.Errorf("[QDSampleData] method '%s' not implemented", qdCtx.MethodName)
 }
 
@@ -101,9 +105,16 @@ func WithQDData(data *idata.IData) QDSampleDataOption {
 		d.Data = data
 	}
 }
+
 func WithQDFallback(fallback SampleData) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.fallback = fallback
+	}
+}
+
+func WithQDOnMethodNotImplemented(m func(qdCtx *QDSampleDataContext) error) QDSampleDataOption {
+	return func(d *QDSampleData) {
+		d.onMethodNotImplemented = m
 	}
 }
 

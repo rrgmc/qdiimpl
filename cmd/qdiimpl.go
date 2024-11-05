@@ -170,6 +170,14 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		}
 		return false
 	})
+	onMethodNotImplementedParamName := util.GetUniqueName("onMethodNotImplemented", func(nameExists string) bool {
+		for j := 0; j < iface.NumMethods(); j++ {
+			if iface.Method(j).Name() == nameExists {
+				return true
+			}
+		}
+		return false
+	})
 
 	// default interface generic types
 	codeObjectTypes := util.AddTypeParamsList(objNamedType.TypeParams(), false)
@@ -220,6 +228,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 			group.Id("execCount").Map(String()).Int()
 			group.Id(fallbackParamName).Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
+			group.Id(onMethodNotImplementedParamName).Add(Func().
+				Params(
+					Id("qdCtx").Op("*").Id(objContext),
+				).
+				Params(
+					Error(),
+				))
 
 			// interface method impls
 			for j := 0; j < iface.NumMethods(); j++ {
@@ -460,6 +475,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			Error(),
 		).
 		BlockFunc(func(bgroup *Group) {
+			bgroup.If(Id("d").Dot(onMethodNotImplementedParamName).Op("!=").Nil()).
+				Block(
+					Return(Id("d").Dot(onMethodNotImplementedParamName).Call(Id("qdCtx"))),
+				)
 			bgroup.Return(Qual("fmt", "Errorf").
 				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("qdCtx").Dot("MethodName")))
 		})
@@ -478,6 +497,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				Id("d").Dot(dataParamName).Op("=").Id("data"),
 			)),
 		)
+		f.Line()
 	}
 
 	// WithFallback option
@@ -489,6 +509,21 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			Id("d").Dot(fallbackParamName).Op("=").Id("fallback"),
 		)),
 	)
+	f.Line()
+
+	// WithOnMethodNotImplemented option
+	// # func WithOnMethodNotImplemented(m func (qdCtx *TYPEContext) error) TYPEOption {}
+	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(onMethodNotImplementedParamName)).TypesFunc(codeObjectTypesWithType).
+		Params(
+			Id("m").Func().Params(Id("qdCtx").Op("*").Id(objContext)).Params(Error()),
+		).
+		Params(Id(objOption).TypesFunc(codeObjectTypes)).
+		Block(
+			Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
+				Id("d").Dot(onMethodNotImplementedParamName).Op("=").Id("m"),
+			)),
+		)
+	f.Line()
 
 	// method options
 	for j := 0; j < iface.NumMethods(); j++ {

@@ -9,6 +9,7 @@ import (
 )
 
 type QDMyInterfaceContext struct {
+	MethodName     string
 	ExecCount      int
 	CallerFunc     string
 	CallerFile     string
@@ -26,19 +27,20 @@ func (c *QDMyInterfaceContext) NotSupported() {
 type qdMyInterface[T any, X II] struct {
 	DataQDII any
 
-	lock            sync.Mutex
-	execCount       map[string]int
-	fallback        MyInterface[T, X]
-	implCloseNotify []func(qdCtx *QDMyInterfaceContext) <-chan bool
-	implData        []func(qdCtx *QDMyInterfaceContext)
-	implGet         []func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (x1 T, err error)
-	implOther       []func(qdCtx *QDMyInterfaceContext, si SecondInterface) int
-	implOther2      []func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int
-	implSet         []func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
-	implUnnamed     []func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)
-	implXGet        []func(qdCtx *QDMyInterfaceContext, ss *SI) *SI
-	implXGet2       []func(qdCtx *QDMyInterfaceContext, ss *XI) *XI
-	implinternal    []func(qdCtx *QDMyInterfaceContext) bool
+	lock                   sync.Mutex
+	execCount              map[string]int
+	fallback               MyInterface[T, X]
+	onMethodNotImplemented func(qdCtx *QDMyInterfaceContext) error
+	implCloseNotify        []func(qdCtx *QDMyInterfaceContext) <-chan bool
+	implData               []func(qdCtx *QDMyInterfaceContext)
+	implGet                []func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string) (x1 T, err error)
+	implOther              []func(qdCtx *QDMyInterfaceContext, si SecondInterface) int
+	implOther2             []func(qdCtx *QDMyInterfaceContext, ti ThirdInterface[T]) int
+	implSet                []func(qdCtx *QDMyInterfaceContext, ctx context.Context, name string, value T) error
+	implUnnamed            []func(qdCtx *QDMyInterfaceContext, p0 bool, p1 string)
+	implXGet               []func(qdCtx *QDMyInterfaceContext, ss *SI) *SI
+	implXGet2              []func(qdCtx *QDMyInterfaceContext, ss *XI) *XI
+	implinternal           []func(qdCtx *QDMyInterfaceContext) bool
 }
 
 type QDMyInterfaceOption[T any, X II] func(*qdMyInterface[T, X])
@@ -65,7 +67,7 @@ func (d *qdMyInterface[T, X]) CloseNotify() <-chan bool {
 	if d.fallback != nil {
 		return d.fallback.CloseNotify()
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // Data implements [main.MyInterface.Data].
@@ -83,7 +85,7 @@ func (d *qdMyInterface[T, X]) Data() {
 		d.fallback.Data()
 		return
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // Get implements [main.MyInterface.Get].
@@ -100,7 +102,7 @@ func (d *qdMyInterface[T, X]) Get(ctx context.Context, name string) (x1 T, err e
 	if d.fallback != nil {
 		return d.fallback.Get(ctx, name)
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // Other implements [main.MyInterface.Other].
@@ -117,7 +119,7 @@ func (d *qdMyInterface[T, X]) Other(si SecondInterface) int {
 	if d.fallback != nil {
 		return d.fallback.Other(si)
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // Other2 implements [main.MyInterface.Other2].
@@ -134,7 +136,7 @@ func (d *qdMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 	if d.fallback != nil {
 		return d.fallback.Other2(ti)
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // Set implements [main.MyInterface.Set].
@@ -151,7 +153,7 @@ func (d *qdMyInterface[T, X]) Set(ctx context.Context, name string, value T) err
 	if d.fallback != nil {
 		return d.fallback.Set(ctx, name, value)
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // Unnamed implements [main.MyInterface.Unnamed].
@@ -169,7 +171,7 @@ func (d *qdMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
 		d.fallback.Unnamed(p0, p1)
 		return
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // XGet implements [main.MyInterface.XGet].
@@ -186,7 +188,7 @@ func (d *qdMyInterface[T, X]) XGet(ss *SI) *SI {
 	if d.fallback != nil {
 		return d.fallback.XGet(ss)
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // XGet2 implements [main.MyInterface.XGet2].
@@ -203,7 +205,7 @@ func (d *qdMyInterface[T, X]) XGet2(ss *XI) *XI {
 	if d.fallback != nil {
 		return d.fallback.XGet2(ss)
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 // internal implements [main.MyInterface.internal].
@@ -220,7 +222,7 @@ func (d *qdMyInterface[T, X]) internal() bool {
 	if d.fallback != nil {
 		return d.fallback.internal()
 	}
-	panic(fmt.Errorf("[qdMyInterface] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 func (d *qdMyInterface[T, X]) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -241,7 +243,21 @@ func (d *qdMyInterface[T, X]) createContext(methodName string) *QDMyInterfaceCon
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
 	d.lock.Lock()
 	defer d.lock.Unlock()
-	return &QDMyInterfaceContext{ExecCount: d.execCount[methodName], CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.DataQDII}
+	return &QDMyInterfaceContext{
+		MethodName: methodName,
+		ExecCount:  d.execCount[methodName],
+		CallerFunc: callerFunc,
+		CallerFile: callerFile,
+		CallerLine: callerLine,
+		Data:       d.DataQDII,
+	}
+}
+
+func (d *qdMyInterface[T, X]) methodNotImplemented(qdCtx *QDMyInterfaceContext) error {
+	if d.onMethodNotImplemented != nil {
+		return d.onMethodNotImplemented(qdCtx)
+	}
+	return fmt.Errorf("[qdMyInterface] method '%s' not implemented", qdCtx.MethodName)
 }
 
 // Options
@@ -251,9 +267,16 @@ func WithDataQDII[T any, X II](data any) QDMyInterfaceOption[T, X] {
 		d.DataQDII = data
 	}
 }
+
 func WithFallback[T any, X II](fallback MyInterface[T, X]) QDMyInterfaceOption[T, X] {
 	return func(d *qdMyInterface[T, X]) {
 		d.fallback = fallback
+	}
+}
+
+func WithOnMethodNotImplemented[T any, X II](m func(qdCtx *QDMyInterfaceContext) error) QDMyInterfaceOption[T, X] {
+	return func(d *qdMyInterface[T, X]) {
+		d.onMethodNotImplemented = m
 	}
 }
 

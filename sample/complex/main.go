@@ -23,6 +23,9 @@ func main() {
 			*d++
 			return fmt.Sprintf("a%v", *d), nil
 		}),
+		WithOnMethodNotImplemented[string, IIImpl](func(qdCtx *QDMyInterfaceContext) error {
+			return fmt.Errorf("the method '%s' was not implemented", qdCtx.MethodName)
+		}),
 	)
 
 	v, err := x.Get(context.Background(), "a")
@@ -36,4 +39,13 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(v)
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("Recovered from panic. Error:\n%v", r)
+			}
+		}()
+		_ = x.Set(context.Background(), "c", "d")
+	}()
 }

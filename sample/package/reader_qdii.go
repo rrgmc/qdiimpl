@@ -9,6 +9,7 @@ import (
 )
 
 type ReaderContext struct {
+	MethodName     string
 	ExecCount      int
 	CallerFunc     string
 	CallerFile     string
@@ -23,10 +24,11 @@ func (c *ReaderContext) NotSupported() {
 }
 
 type Reader struct {
-	lock      sync.Mutex
-	execCount map[string]int
-	fallback  io.Reader
-	implRead  []func(qdCtx *ReaderContext, p []byte) (n int, err error)
+	lock                   sync.Mutex
+	execCount              map[string]int
+	fallback               io.Reader
+	onMethodNotImplemented func(qdCtx *ReaderContext) error
+	implRead               []func(qdCtx *ReaderContext, p []byte) (n int, err error)
 }
 
 var _ io.Reader = (*Reader)(nil)
@@ -55,7 +57,7 @@ func (d *Reader) Read(p []byte) (n int, err error) {
 	if d.fallback != nil {
 		return d.fallback.Read(p)
 	}
-	panic(fmt.Errorf("[Reader] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -76,7 +78,20 @@ func (d *Reader) createContext(methodName string) *ReaderContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
 	d.lock.Lock()
 	defer d.lock.Unlock()
-	return &ReaderContext{ExecCount: d.execCount[methodName], CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
+	return &ReaderContext{
+		MethodName: methodName,
+		ExecCount:  d.execCount[methodName],
+		CallerFunc: callerFunc,
+		CallerFile: callerFile,
+		CallerLine: callerLine,
+	}
+}
+
+func (d *Reader) methodNotImplemented(qdCtx *ReaderContext) error {
+	if d.onMethodNotImplemented != nil {
+		return d.onMethodNotImplemented(qdCtx)
+	}
+	return fmt.Errorf("[Reader] method '%s' not implemented", qdCtx.MethodName)
 }
 
 // Options
@@ -84,6 +99,12 @@ func (d *Reader) createContext(methodName string) *ReaderContext {
 func WithFallback(fallback io.Reader) ReaderOption {
 	return func(d *Reader) {
 		d.fallback = fallback
+	}
+}
+
+func WithOnMethodNotImplemented(m func(qdCtx *ReaderContext) error) ReaderOption {
+	return func(d *Reader) {
+		d.onMethodNotImplemented = m
 	}
 }
 
