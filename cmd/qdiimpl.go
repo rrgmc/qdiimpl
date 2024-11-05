@@ -485,7 +485,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					Return(Id("d").Dot(onMethodNotImplementedParamName).Call(Id("qdCtx"), Id("hasCallbacks"))),
 				)
 			bgroup.Id("msg").Op(":=").Lit("not implemented")
-			bgroup.If(Op("!").Id("hasCallbacks")).
+			bgroup.If(Id("hasCallbacks")).
 				Block(
 					bgroup.Id("msg").Op("=").Lit("not supported by any callbacks"),
 				)

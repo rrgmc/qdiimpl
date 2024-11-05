@@ -96,7 +96,7 @@ func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext, hasCallb
 		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
 	}
 	msg := "not implemented"
-	if !hasCallbacks {
+	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
 	msg = "not supported by any callbacks"

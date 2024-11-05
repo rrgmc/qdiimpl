@@ -258,7 +258,7 @@ func (d *qdMyInterface[T, X]) methodNotImplemented(qdCtx *QDMyInterfaceContext, 
 		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
 	}
 	msg := "not implemented"
-	if !hasCallbacks {
+	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
 	msg = "not supported by any callbacks"

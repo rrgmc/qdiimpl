@@ -92,7 +92,7 @@ func (d *Reader) methodNotImplemented(qdCtx *ReaderContext, hasCallbacks bool) e
 		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
 	}
 	msg := "not implemented"
-	if !hasCallbacks {
+	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
 	msg = "not supported by any callbacks"
