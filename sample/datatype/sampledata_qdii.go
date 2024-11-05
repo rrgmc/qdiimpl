@@ -101,7 +101,6 @@ func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext, hasCallb
 	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
-	msg = "not supported by any callbacks"
 	return fmt.Errorf("[QDSampleData] method '%s' %s", qdCtx.MethodName, msg)
 }
 

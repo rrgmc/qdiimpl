@@ -97,7 +97,6 @@ func (d *Reader) methodNotImplemented(qdCtx *ReaderContext, hasCallbacks bool) e
 	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
-	msg = "not supported by any callbacks"
 	return fmt.Errorf("[Reader] method '%s' %s", qdCtx.MethodName, msg)
 }
 

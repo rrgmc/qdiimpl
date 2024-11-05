@@ -263,7 +263,6 @@ func (d *qdMyInterface[T, X]) methodNotImplemented(qdCtx *QDMyInterfaceContext, 
 	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
-	msg = "not supported by any callbacks"
 	return fmt.Errorf("[qdMyInterface] method '%s' %s", qdCtx.MethodName, msg)
 }
 

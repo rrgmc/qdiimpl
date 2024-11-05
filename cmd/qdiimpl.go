@@ -491,7 +491,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			bgroup.Id("msg").Op(":=").Lit("not implemented")
 			bgroup.If(Id("hasCallbacks")).
 				Block(
-					bgroup.Id("msg").Op("=").Lit("not supported by any callbacks"),
+					Id("msg").Op("=").Lit("not supported by any callbacks"),
 				)
 			bgroup.Return(Qual("fmt", "Errorf").
 				Call(Lit(fmt.Sprintf("[%s] method '%%s' %%s", objName)),
