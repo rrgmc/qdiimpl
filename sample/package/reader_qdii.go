@@ -27,7 +27,7 @@ type Reader struct {
 	lock                   sync.Mutex
 	execCount              map[string]int
 	fallback               io.Reader
-	onMethodNotImplemented func(qdCtx *ReaderContext) error
+	onMethodNotImplemented func(qdCtx *ReaderContext, hasCallbacks bool) error
 	implRead               []func(qdCtx *ReaderContext, p []byte) (n int, err error)
 }
 
@@ -57,7 +57,7 @@ func (d *Reader) Read(p []byte) (n int, err error) {
 	if d.fallback != nil {
 		return d.fallback.Read(p)
 	}
-	panic(d.methodNotImplemented(d.createContext(methodName)))
+	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implRead) > 0))
 }
 
 func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -87,11 +87,16 @@ func (d *Reader) createContext(methodName string) *ReaderContext {
 	}
 }
 
-func (d *Reader) methodNotImplemented(qdCtx *ReaderContext) error {
+func (d *Reader) methodNotImplemented(qdCtx *ReaderContext, hasCallbacks bool) error {
 	if d.onMethodNotImplemented != nil {
-		return d.onMethodNotImplemented(qdCtx)
+		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
 	}
-	return fmt.Errorf("[Reader] method '%s' not implemented", qdCtx.MethodName)
+	msg := "not implemented"
+	if !hasCallbacks {
+		msg = "not supported by any callbacks"
+	}
+	msg = "not supported by any callbacks"
+	return fmt.Errorf("[Reader] method '%s' %s", qdCtx.MethodName, msg)
 }
 
 // Options
@@ -102,7 +107,7 @@ func WithFallback(fallback io.Reader) ReaderOption {
 	}
 }
 
-func WithOnMethodNotImplemented(m func(qdCtx *ReaderContext) error) ReaderOption {
+func WithOnMethodNotImplemented(m func(qdCtx *ReaderContext, hasCallbacks bool) error) ReaderOption {
 	return func(d *Reader) {
 		d.onMethodNotImplemented = m
 	}

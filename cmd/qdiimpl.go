@@ -231,6 +231,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			group.Id(onMethodNotImplementedParamName).Add(Func().
 				Params(
 					Id("qdCtx").Op("*").Id(objContext),
+					Id("hasCallbacks").Bool(),
 				).
 				Params(
 					Error(),
@@ -380,7 +381,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				}
 			})
 
-			s.Panic(Id("d").Dot("methodNotImplemented").Call(Id("d").Dot("createContext").Call(Id("methodName"))))
+			s.Panic(Id("d").Dot("methodNotImplemented").Call(
+				Id("d").Dot("createContext").Call(Id("methodName")),
+				Len(Id("d").Dot("impl"+mtd.Name())).Op(">").Lit(0),
+			))
 		})
 	}
 
@@ -465,11 +469,12 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// methodNotImplemented
-	// # func (d *TYPE) methodNotImplemented(qdCtx *TYPEContext) error {}
+	// # func (d *TYPE) methodNotImplemented(qdCtx *TYPEContext, hasCallbacks bool) error {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("methodNotImplemented").
 		Params(
 			Id("qdCtx").Op("*").Id(objContext),
+			Id("hasCallbacks").Bool(),
 		).
 		Params(
 			Error(),
@@ -477,10 +482,16 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		BlockFunc(func(bgroup *Group) {
 			bgroup.If(Id("d").Dot(onMethodNotImplementedParamName).Op("!=").Nil()).
 				Block(
-					Return(Id("d").Dot(onMethodNotImplementedParamName).Call(Id("qdCtx"))),
+					Return(Id("d").Dot(onMethodNotImplementedParamName).Call(Id("qdCtx"), Id("hasCallbacks"))),
+				)
+			bgroup.Id("msg").Op(":=").Lit("not implemented")
+			bgroup.If(Op("!").Id("hasCallbacks")).
+				Block(
+					bgroup.Id("msg").Op("=").Lit("not supported by any callbacks"),
 				)
 			bgroup.Return(Qual("fmt", "Errorf").
-				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("qdCtx").Dot("MethodName")))
+				Call(Lit(fmt.Sprintf("[%s] method '%%s' %%s", objName)),
+					Id("qdCtx").Dot("MethodName"), Id("msg")))
 		})
 
 	f.Line()
@@ -512,10 +523,15 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// WithOnMethodNotImplemented option
-	// # func WithOnMethodNotImplemented(m func (qdCtx *TYPEContext) error) TYPEOption {}
+	// # func WithOnMethodNotImplemented(m func (qdCtx *TYPEContext, hasCallbacks bool) error) TYPEOption {}
 	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(onMethodNotImplementedParamName)).TypesFunc(codeObjectTypesWithType).
 		Params(
-			Id("m").Func().Params(Id("qdCtx").Op("*").Id(objContext)).Params(Error()),
+			Id("m").Func().
+				Params(
+					Id("qdCtx").Op("*").Id(objContext),
+					Id("hasCallbacks").Bool(),
+				).
+				Params(Error()),
 		).
 		Params(Id(objOption).TypesFunc(codeObjectTypes)).
 		Block(

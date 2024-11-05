@@ -30,7 +30,7 @@ type QDSampleData struct {
 	lock                   sync.Mutex
 	execCount              map[string]int
 	fallback               SampleData
-	onMethodNotImplemented func(qdCtx *QDSampleDataContext) error
+	onMethodNotImplemented func(qdCtx *QDSampleDataContext, hasCallbacks bool) error
 	implGet                []func(qdCtx *QDSampleDataContext, name string) (any, error)
 }
 
@@ -60,7 +60,7 @@ func (d *QDSampleData) Get(name string) (any, error) {
 	if d.fallback != nil {
 		return d.fallback.Get(name)
 	}
-	panic(d.methodNotImplemented(d.createContext(methodName)))
+	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implGet) > 0))
 }
 
 func (d *QDSampleData) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -91,11 +91,16 @@ func (d *QDSampleData) createContext(methodName string) *QDSampleDataContext {
 	}
 }
 
-func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext) error {
+func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext, hasCallbacks bool) error {
 	if d.onMethodNotImplemented != nil {
-		return d.onMethodNotImplemented(qdCtx)
+		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
 	}
-	return fmt.Errorf("[QDSampleData] method '%s' not implemented", qdCtx.MethodName)
+	msg := "not implemented"
+	if !hasCallbacks {
+		msg = "not supported by any callbacks"
+	}
+	msg = "not supported by any callbacks"
+	return fmt.Errorf("[QDSampleData] method '%s' %s", qdCtx.MethodName, msg)
 }
 
 // Options
@@ -112,7 +117,7 @@ func WithQDFallback(fallback SampleData) QDSampleDataOption {
 	}
 }
 
-func WithQDOnMethodNotImplemented(m func(qdCtx *QDSampleDataContext) error) QDSampleDataOption {
+func WithQDOnMethodNotImplemented(m func(qdCtx *QDSampleDataContext, hasCallbacks bool) error) QDSampleDataOption {
 	return func(d *QDSampleData) {
 		d.onMethodNotImplemented = m
 	}
