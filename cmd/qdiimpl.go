@@ -482,7 +482,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		BlockFunc(func(bgroup *Group) {
 			bgroup.If(Id("d").Dot(onMethodNotImplementedParamName).Op("!=").Nil()).
 				Block(
-					Return(Id("d").Dot(onMethodNotImplementedParamName).Call(Id("qdCtx"), Id("hasCallbacks"))),
+					If(Id("err").Op(":=").Id("d").Dot(onMethodNotImplementedParamName).Call(Id("qdCtx"), Id("hasCallbacks")),
+						Id("err").Op("!=").Nil()).
+						Block(
+							Return(Id("err")),
+						),
 				)
 			bgroup.Id("msg").Op(":=").Lit("not implemented")
 			bgroup.If(Id("hasCallbacks")).

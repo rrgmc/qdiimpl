@@ -89,7 +89,9 @@ func (d *Reader) createContext(methodName string) *ReaderContext {
 
 func (d *Reader) methodNotImplemented(qdCtx *ReaderContext, hasCallbacks bool) error {
 	if d.onMethodNotImplemented != nil {
-		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
+		if err := d.onMethodNotImplemented(qdCtx, hasCallbacks); err != nil {
+			return err
+		}
 	}
 	msg := "not implemented"
 	if hasCallbacks {

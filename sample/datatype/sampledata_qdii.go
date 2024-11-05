@@ -93,7 +93,9 @@ func (d *QDSampleData) createContext(methodName string) *QDSampleDataContext {
 
 func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext, hasCallbacks bool) error {
 	if d.onMethodNotImplemented != nil {
-		return d.onMethodNotImplemented(qdCtx, hasCallbacks)
+		if err := d.onMethodNotImplemented(qdCtx, hasCallbacks); err != nil {
+			return err
+		}
 	}
 	msg := "not implemented"
 	if hasCallbacks {
