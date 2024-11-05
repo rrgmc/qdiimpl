@@ -9,6 +9,7 @@ import (
 )
 
 type QDSampleDataContext struct {
+	MethodName     string
 	ExecCount      int
 	CallerFunc     string
 	CallerFile     string
@@ -58,7 +59,7 @@ func (d *QDSampleData) Get(name string) (any, error) {
 	if d.fallback != nil {
 		return d.fallback.Get(name)
 	}
-	panic(fmt.Errorf("[QDSampleData] method '%s' not implemented", methodName))
+	panic(d.methodNotImplemented(d.createContext(methodName)))
 }
 
 func (d *QDSampleData) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -79,7 +80,18 @@ func (d *QDSampleData) createContext(methodName string) *QDSampleDataContext {
 	callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
 	d.lock.Lock()
 	defer d.lock.Unlock()
-	return &QDSampleDataContext{ExecCount: d.execCount[methodName], CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine, Data: d.Data}
+	return &QDSampleDataContext{
+		MethodName: methodName,
+		ExecCount:  d.execCount[methodName],
+		CallerFunc: callerFunc,
+		CallerFile: callerFile,
+		CallerLine: callerLine,
+		Data:       d.Data,
+	}
+}
+
+func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext) error {
+	return fmt.Errorf("[QDSampleData] method '%s' not implemented", qdCtx.MethodName)
 }
 
 // Options

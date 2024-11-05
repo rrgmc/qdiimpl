@@ -179,6 +179,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// # type TYPEContext struct {}
 	f.Type().Id(objContext).
 		StructFunc(func(sgroup *Group) {
+			sgroup.Id("MethodName").String()
 			sgroup.Id("ExecCount").Int()
 			sgroup.Id("CallerFunc").String()
 			sgroup.Id("CallerFile").String()
@@ -201,7 +202,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		)
 
 	// Struct implementation
-	// # type QDTYPE struct {}
+	// # type TYPE struct {}
 	f.Type().Id(objName).
 		TypesFunc(func(tgroup *Group) {
 			for t := 0; t < objNamedType.TypeParams().Len(); t++ {
@@ -225,7 +226,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				mtd := iface.Method(j)
 				sig := mtd.Type().(*types.Signature)
 
-				// # implMETHOD  func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)
+				// # implMETHOD  func(qdCtx *TYPEContext, METHODPARAMS...) (METHODRESULTS...)
 				group.Id("impl" + mtd.Name()).Index().Func().ParamsFunc(func(pgroup *Group) {
 					// add qd context parameter
 					qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
@@ -253,7 +254,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// ensure struct implements interface
 	if objNamedType.TypeParams().Len() == 0 { // with generics, it is harder to find suitable types
 		f.Line()
-		// # var _ TYPE = (*QDTYPE)(nil)
+		// # var _ TYPE = (*TYPE)(nil)
 		f.Var().Id("_").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)).Op("=").
 			Parens(Op("*").Id(objName).TypesFunc(codeObjectTypes)).Parens(Nil())
 	}
@@ -261,13 +262,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// option type
-	// # type QDTYPEOption func(*QDTYPE)
+	// # type TYPEOption func(*TYPE)
 	f.Type().Id(objOption).TypesFunc(codeObjectTypesWithType).Func().Params(Op("*").Id(objName).TypesFunc(codeObjectTypes))
 
 	f.Line()
 
 	// constructor
-	// # func NewQDTYPE(options ...QDTYPEOption) *QDTYPE {}
+	// # func NewTYPE(options ...TYPEOption) *TYPE {}
 	f.Func().Id("New"+objNameExported).
 		TypesFunc(codeObjectTypesWithType).
 		Params(
@@ -300,7 +301,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		mtd := iface.Method(j)
 		sig := mtd.Type().(*types.Signature)
 
-		// # func (d *QDTYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
+		// # func (d *TYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
 		f.Commentf("%s implements [%s.%s].", mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
@@ -364,8 +365,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				}
 			})
 
-			s.Panic(Qual("fmt", "Errorf").
-				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("methodName")))
+			s.Panic(Id("d").Dot("methodNotImplemented").Call(Id("d").Dot("createContext").Call(Id("methodName"))))
 		})
 	}
 
@@ -373,7 +373,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// getCallerFuncName
-	// # func (d *QDTYPE) getCallerFuncName(skip int) (funcName string, file string, line int) {}
+	// # func (d *TYPE) getCallerFuncName(skip int) (funcName string, file string, line int) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("getCallerFuncName").
 		Params(
@@ -399,7 +399,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// addCallMethod
-	// # func (d *QDTYPE) addCallMethod(methodName string) {}
+	// # func (d *TYPE) addCallMethod(methodName string) {}
 	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
 		Id("addCallMethod").
 		Params(
@@ -429,7 +429,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			Id("d").Dot("lock").Dot("Lock").Call(),
 			Defer().Id("d").Dot("lock").Dot("Unlock").Call(),
 			Return(
-				Op("&").Id(objContext).ValuesFunc(func(vgroup *Group) {
+				Op("&").Id(objContext).CustomFunc(Options{
+					Open:      "{",
+					Close:     "}",
+					Separator: ",",
+					Multi:     true,
+				}, func(vgroup *Group) {
+					vgroup.Id("MethodName").Op(":").Id("methodName")
 					vgroup.Id("ExecCount").Op(":").Id("d").
 						Dot("execCount").Index(Id("methodName"))
 					vgroup.Id("CallerFunc").Op(":").Id("callerFunc")
@@ -442,12 +448,29 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		)
 
 	f.Line()
+
+	// methodNotImplemented
+	// # func (d *TYPE) methodNotImplemented(qdCtx *TYPEContext) error {}
+	f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
+		Id("methodNotImplemented").
+		Params(
+			Id("qdCtx").Op("*").Id(objContext),
+		).
+		Params(
+			Error(),
+		).
+		BlockFunc(func(bgroup *Group) {
+			bgroup.Return(Qual("fmt", "Errorf").
+				Call(Lit(fmt.Sprintf("[%s] method '%%s' not implemented", objName)), Id("qdCtx").Dot("MethodName")))
+		})
+
+	f.Line()
 	f.Comment("Options")
 	f.Line()
 
 	if codeDataType != nil {
 		// WithData option
-		// # func WithData(data any) QDTYPEOption {}
+		// # func WithData(data any) TYPEOption {}
 		f.Func().Id("With" + objOptionPrefix + dataParamName).TypesFunc(codeObjectTypesWithType).Params(
 			Id("data").Add(codeDataType),
 		).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
@@ -458,7 +481,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	}
 
 	// WithFallback option
-	// # func WithFallback(fallback SOURCETYPE) QDTYPEOption {}
+	// # func WithFallback(fallback SOURCETYPE) TYPEOption {}
 	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).Params(
 		Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)),
 	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
@@ -474,7 +497,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 		f.Line()
 
-		// # func WithMETHOD(implMETHOD func(qdCtx *QDTYPEContext, METHODPARAMS...) (METHODRESULTS...)) QDTYPEOption {}
+		// # func WithMETHOD(implMETHOD func(qdCtx *TYPEContext, METHODPARAMS...) (METHODRESULTS...)) TYPEOption {}
 		f.Commentf("With%s%s implements [%s.%s].", objOptionPrefix, mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Id("With" + objOptionPrefix + mtd.Name()).TypesFunc(codeObjectTypesWithType).Params(
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
