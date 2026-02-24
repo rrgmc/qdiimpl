@@ -256,7 +256,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					pgroup.Id(qdCtxName).Op("*").Id(objContext)
 					for k := 0; k < sig.Params().Len(); k++ {
 						sigParam := sig.Params().At(k)
-						pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetQualCode(sigParam.Type()))
+						pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
 					}
 				}).ParamsFunc(func(rgroup *Group) {
 					for k := 0; k < sig.Results().Len(); k++ {
@@ -322,7 +322,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k := 0; k < sig.Params().Len(); k++ {
 				sigParam := sig.Params().At(k)
-				pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetQualCode(sigParam.Type()))
+				pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
 			}
 		}).ParamsFunc(func(rgroup *Group) {
 			for k := 0; k < sig.Results().Len(); k++ {
@@ -339,8 +339,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					call := Id("impl").CallFunc(func(cgroup *Group) {
 						cgroup.Id("qctx")
 						for k := 0; k < sig.Params().Len(); k++ {
-							sigParam := sig.Params().At(k)
-							cgroup.Id(util.ParamName(k, sigParam))
+							// sigParam := sig.Params().At(k)
+							// cgroup.Id(util.ParamName(k, sigParam))
+							cgroup.Id(util.GetSignatureParamCallCode(sig, k))
 						}
 					})
 
@@ -369,8 +370,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			s.If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
 				icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
 					for k := 0; k < sig.Params().Len(); k++ {
-						sigParam := sig.Params().At(k)
-						igroup.Id(util.ParamName(k, sigParam))
+						// sigParam := sig.Params().At(k)
+						// igroup.Id(util.ParamName(k, sigParam))
+						igroup.Id(util.GetSignatureParamCallCode(sig, k))
 					}
 				})
 				if sig.Results().Len() == 0 {
@@ -568,7 +570,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				pgroup.Id(qdCtxName).Op("*").Id(objContext)
 				for k := 0; k < sig.Params().Len(); k++ {
 					sigParam := sig.Params().At(k)
-					pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetQualCode(sigParam.Type()))
+					pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
 				}
 			}).ParamsFunc(func(rgroup *Group) {
 				for k := 0; k < sig.Results().Len(); k++ {

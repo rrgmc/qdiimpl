@@ -76,6 +76,23 @@ func GetQualCode(typ types.Type) *jen.Statement {
 	}
 }
 
+func GetSignatureParamQualCode(sig *types.Signature, i int) *jen.Statement {
+	sigParam := sig.Params().At(i)
+	if !sig.Variadic() || i != sig.Params().Len()-1 {
+		return GetQualCode(sigParam.Type())
+	}
+	return jen.Op("...").Add(GetQualCode(sigParam.Type().(*types.Slice).Elem()))
+}
+
+func GetSignatureParamCallCode(sig *types.Signature, i int) string {
+	sigParam := sig.Params().At(i)
+	name := ParamName(i, sigParam)
+	if sig.Variadic() && i == sig.Params().Len()-1 {
+		return name + "..."
+	}
+	return name
+}
+
 func TypeNameCode(typeName string) (*jen.Statement, error) {
 	typeName, isPtr := strings.CutPrefix(typeName, "*")
 
