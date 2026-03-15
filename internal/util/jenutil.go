@@ -59,8 +59,7 @@ func GetQualCode(typ types.Type) *jen.Statement {
 		case *types.Signature:
 			return st.Add(jen.Func().
 				ParamsFunc(func(pgroup *jen.Group) {
-					for k := 0; k < tt.Params().Len(); k++ {
-						sigParam := tt.Params().At(k)
+					for k, sigParam := range IterWithIndex(tt.Params().Variables()) {
 						pgroup.Id(ParamName(k, sigParam)).Add(GetQualCode(sigParam.Type()))
 					}
 				}).

@@ -213,8 +213,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// # type TYPE struct {}
 	f.Type().Id(objName).
 		TypesFunc(func(tgroup *Group) {
-			for t := 0; t < objNamedType.TypeParams().Len(); t++ {
-				tparam := objNamedType.TypeParams().At(t)
+			for tparam := range objNamedType.TypeParams().TypeParams() {
 				tgroup.Id(tparam.Obj().Name()).Add(util.GetQualCode(tparam.Constraint()))
 			}
 		}).
@@ -246,21 +245,19 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				group.Id("impl" + mtd.Name()).Index().Func().ParamsFunc(func(pgroup *Group) {
 					// add qd context parameter
 					qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
-						for k := 0; k < sig.Params().Len(); k++ {
-							if sig.Params().At(k).Name() == nameExists {
+						for sigParam := range sig.Params().Variables() {
+							if sigParam.Name() == nameExists {
 								return true
 							}
 						}
 						return false
 					})
 					pgroup.Id(qdCtxName).Op("*").Id(objContext)
-					for k := 0; k < sig.Params().Len(); k++ {
-						sigParam := sig.Params().At(k)
+					for k, sigParam := range util.IterWithIndex(sig.Params().Variables()) {
 						pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
 					}
 				}).ParamsFunc(func(rgroup *Group) {
-					for k := 0; k < sig.Results().Len(); k++ {
-						sigParam := sig.Results().At(k)
+					for sigParam := range sig.Results().Variables() {
 						rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 					}
 				})
@@ -320,13 +317,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		// # func (d *TYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
 		f.Commentf("%s implements [%s.%s].", mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
-			for k := 0; k < sig.Params().Len(); k++ {
-				sigParam := sig.Params().At(k)
+			for k, sigParam := range util.IterWithIndex(sig.Params().Variables()) {
 				pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
 			}
 		}).ParamsFunc(func(rgroup *Group) {
-			for k := 0; k < sig.Results().Len(); k++ {
-				sigParam := sig.Results().At(k)
+			for sigParam := range sig.Results().Variables() {
 				rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 			}
 		}).BlockFunc(func(s *Group) {
@@ -338,15 +333,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 					call := Id("impl").CallFunc(func(cgroup *Group) {
 						cgroup.Id("qctx")
-						for k := 0; k < sig.Params().Len(); k++ {
-							// sigParam := sig.Params().At(k)
-							// cgroup.Id(util.ParamName(k, sigParam))
+						for k := range sig.Params().Len() {
 							cgroup.Id(util.GetSignatureParamCallCode(sig, k))
 						}
 					})
 
 					var retVars []Code
-					for k := 0; k < sig.Results().Len(); k++ {
+					for k := range sig.Results().Len() {
 						retVars = append(retVars, Id(fmt.Sprintf("r%d", k)))
 					}
 
@@ -369,9 +362,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 			s.If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
 				icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
-					for k := 0; k < sig.Params().Len(); k++ {
-						// sigParam := sig.Params().At(k)
-						// igroup.Id(util.ParamName(k, sigParam))
+					for k := range sig.Params().Len() {
 						igroup.Id(util.GetSignatureParamCallCode(sig, k))
 					}
 				})
@@ -560,21 +551,19 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			Id("impl" + mtd.Name()).Func().ParamsFunc(func(pgroup *Group) {
 				// add qd context parameter
 				qdCtxName := util.GetUniqueName("qdCtx", func(nameExists string) bool {
-					for k := 0; k < sig.Params().Len(); k++ {
-						if sig.Params().At(k).Name() == nameExists {
+					for sigParam := range sig.Params().Variables() {
+						if sigParam.Name() == nameExists {
 							return true
 						}
 					}
 					return false
 				})
 				pgroup.Id(qdCtxName).Op("*").Id(objContext)
-				for k := 0; k < sig.Params().Len(); k++ {
-					sigParam := sig.Params().At(k)
+				for k, sigParam := range util.IterWithIndex(sig.Params().Variables()) {
 					pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
 				}
 			}).ParamsFunc(func(rgroup *Group) {
-				for k := 0; k < sig.Results().Len(); k++ {
-					sigParam := sig.Results().At(k)
+				for sigParam := range sig.Results().Variables() {
 					rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
 				}
 			}),

@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"unicode"
 
 	"golang.org/x/tools/go/packages"
@@ -85,4 +86,16 @@ func InitialToUpper(s string) string {
 	}
 
 	return ""
+}
+
+func IterWithIndex[T any](l iter.Seq[T]) iter.Seq2[int, T] {
+	return func(yield func(int, T) bool) {
+		var count int
+		for i := range l {
+			if !yield(count, i) {
+				return
+			}
+			count++
+		}
+	}
 }
