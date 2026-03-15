@@ -23,8 +23,8 @@ func GetQualCode(typ types.Type) *jen.Statement {
 			typ = tt.Elem()
 		case *types.Tuple:
 			var items jen.Statement
-			for i := 0; i < tt.Len(); i++ {
-				items.Add(jen.Id(tt.At(i).Name()).Add(GetQualCode(tt.At(i).Type())))
+			for item := range tt.Variables() {
+				items.Add(jen.Id(item.Name()).Add(GetQualCode(item.Type())))
 			}
 			return st.Add(jen.Params(items...))
 		case *types.Interface:
@@ -65,8 +65,7 @@ func GetQualCode(typ types.Type) *jen.Statement {
 					}
 				}).
 				ParamsFunc(func(rgroup *jen.Group) {
-					for k := 0; k < tt.Results().Len(); k++ {
-						sigParam := tt.Results().At(k)
+					for sigParam := range tt.Results().Variables() {
 						rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
 					}
 				}))
@@ -113,8 +112,7 @@ func TypeNameCode(typeName string) (*jen.Statement, error) {
 
 func AddTypeParamsList(typeList *types.TypeParamList, withType bool) func(*jen.Group) {
 	return func(tgroup *jen.Group) {
-		for t := 0; t < typeList.Len(); t++ {
-			tparam := typeList.At(t)
+		for tparam := range typeList.TypeParams() {
 			if withType {
 				tgroup.Id(tparam.Obj().Name()).Add(GetQualCode(tparam.Constraint()))
 			} else {
@@ -126,8 +124,7 @@ func AddTypeParamsList(typeList *types.TypeParamList, withType bool) func(*jen.G
 
 func AddTypeList(typeList *types.TypeList) func(*jen.Group) {
 	return func(tgroup *jen.Group) {
-		for t := 0; t < typeList.Len(); t++ {
-			tparam := typeList.At(t)
+		for tparam := range typeList.Types() {
 			tgroup.Add(GetQualCode(tparam))
 		}
 	}
