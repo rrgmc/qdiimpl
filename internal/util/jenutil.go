@@ -15,7 +15,7 @@ func GetQualCode(typ types.Type) *jen.Statement {
 		case *types.Basic:
 			return st.Add(jen.Id(tt.Name()))
 		case *types.Array:
-			return st.Add(jen.Index(jen.Lit(tt.Len())).Add(GetQualCode(tt.Elem())))
+			return st.Add(jen.Index(jen.Lit(int(tt.Len()))).Add(GetQualCode(tt.Elem())))
 		case *types.Slice:
 			return st.Add(jen.Index().Add(GetQualCode(tt.Elem())))
 		case *types.Pointer:
