@@ -16,6 +16,8 @@ type List interface {
 	AddItem(value int)
 }
 
+type List2 = List
+
 type Item[T any, S comparable] interface {
 	AddItem(item T)
 	Compare(other S) int
@@ -27,6 +29,9 @@ var (
 	sliceValue  []int
 	pointerValue *float32
 	mapValue map[float32]int8
+	chanValue chan int
+	chanSendValue chan <-int
+	chanRecvValue <-chan int
 )
 
 var (
@@ -39,6 +44,8 @@ var (
 	itemPointerItemValue *Item[Item[int, float64], string]
 	itemMapValue map[string]Item[int, string]
 	itemMapItemValue map[string]Item[Item[int, float64], string]
+	itemChanValue chan Item[int, string]
+	itemChanItemValue chan Item[Item[int, float64], string]
 )
 
 func NewValue(v1 string, v2 int) *string {
@@ -156,9 +163,49 @@ func NewItem(v1 string, v2 Item[string, int]) *Item[string, int] {
 			expect: `var aValue map[string]p.Item[p.Item[int, float64], string]`,
 		},
 		{
+			desc:   `chan`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("chanValue").Type())),
+			expect: `var aValue chan int`,
+		},
+		{
+			desc:   `chan send`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("chanSendValue").Type())),
+			expect: `var aValue chan <-int`,
+		},
+		{
+			desc:   `chan recv`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("chanRecvValue").Type())),
+			expect: `var aValue <-chan int`,
+		},
+		{
+			desc:   `chan item`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemChanValue").Type())),
+			expect: `var aValue chan p.Item[int, string]`,
+		},
+		{
+			desc:   `chan item item`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemChanItemValue").Type())),
+			expect: `var aValue chan p.Item[p.Item[int, float64], string]`,
+		},
+		{
 			desc:   `named`,
 			code:   jen.Var().Id("list").Add(GetQualCode(objList.Type())),
 			expect: `var list p.List`,
+		},
+		{
+			desc:   `named item`,
+			code:   jen.Var().Id("item").Add(GetQualCode(pkg.Scope().Lookup("Item").Type())),
+			expect: `var item p.Item`,
+		},
+		{
+			desc:   `alias`,
+			code:   jen.Type().Id("NewList2").Op("=").Add(GetQualCode(pkg.Scope().Lookup("List2").Type())),
+			expect: `type NewList2 = p.List2`,
+		},
+		{
+			desc:   `signature`,
+			code:   jen.Type().Id("NewValue2").Add(GetQualCode(pkg.Scope().Lookup("NewValue").Type())),
+			expect: `type NewValue2 func(v1 string, v2 int) *string`,
 		},
 	}
 
