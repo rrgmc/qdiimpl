@@ -155,24 +155,24 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	}
 
 	dataParamName := util.GetUniqueName("Data", func(nameExists string) bool {
-		for j := 0; j < iface.NumMethods(); j++ {
-			if iface.Method(j).Name() == nameExists {
+		for mtd := range iface.Methods() {
+			if mtd.Name() == nameExists {
 				return true
 			}
 		}
 		return false
 	})
 	fallbackParamName := util.GetUniqueName("fallback", func(nameExists string) bool {
-		for j := 0; j < iface.NumMethods(); j++ {
-			if iface.Method(j).Name() == nameExists {
+		for mtd := range iface.Methods() {
+			if mtd.Name() == nameExists {
 				return true
 			}
 		}
 		return false
 	})
 	onMethodNotImplementedParamName := util.GetUniqueName("onMethodNotImplemented", func(nameExists string) bool {
-		for j := 0; j < iface.NumMethods(); j++ {
-			if iface.Method(j).Name() == nameExists {
+		for mtd := range iface.Methods() {
+			if mtd.Name() == nameExists {
 				return true
 			}
 		}
@@ -237,8 +237,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				))
 
 			// interface method impls
-			for j := 0; j < iface.NumMethods(); j++ {
-				mtd := iface.Method(j)
+			for mtd := range iface.Methods() {
 				sig := mtd.Type().(*types.Signature)
 
 				// # implMETHOD  func(qdCtx *TYPEContext, METHODPARAMS...) (METHODRESULTS...)
@@ -308,10 +307,10 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// interface methods
-	for j := 0; j < iface.NumMethods(); j++ {
+	for mtd := range iface.Methods() {
 		f.Line()
 
-		mtd := iface.Method(j)
+		// mtd := iface.Method(j)
 		sig := mtd.Type().(*types.Signature)
 
 		// # func (d *TYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
@@ -539,8 +538,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	f.Line()
 
 	// method options
-	for j := 0; j < iface.NumMethods(); j++ {
-		mtd := iface.Method(j)
+	for mtd := range iface.Methods() {
 		sig := mtd.Type().(*types.Signature)
 
 		f.Line()
