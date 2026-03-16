@@ -310,7 +310,6 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	for mtd := range iface.Methods() {
 		f.Line()
 
-		// mtd := iface.Method(j)
 		sig := mtd.Type().(*types.Signature)
 
 		// # func (d *TYPE) METHOD(METHODPARAMS...) (METHODRESULTS...) {}
