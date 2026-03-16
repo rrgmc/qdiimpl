@@ -25,6 +25,8 @@ var (
 	stringValue string
 	arrayValue  [4]int
 	sliceValue  []int
+	pointerValue *float32
+	mapValue map[float32]int8
 )
 
 var (
@@ -33,11 +35,24 @@ var (
 	itemArrayItemValue [6]Item[Item[int, float64], string]
 	itemSliceValue []Item[int, string]
 	itemSliceItemValue []Item[Item[int, float64], string]
+	itemPointerValue *Item[int, string]
+	itemPointerItemValue *Item[Item[int, float64], string]
+	itemMapValue map[string]Item[int, string]
+	itemMapItemValue map[string]Item[Item[int, float64], string]
 )
+
+func NewValue(v1 string, v2 int) *string {
+	return nil
+}
+
+func NewItem(v1 string, v2 Item[string, int]) *Item[string, int] {
+	return nil
+}
 	`
 	pkg := mustTypecheck(src, nil, nil)
 	objList := pkg.Scope().Lookup("List")
 	assert.Assert(t, objList != nil)
+	assert.Assert(t, types.IsInterface(objList.Type()))
 
 	// objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
@@ -76,6 +91,69 @@ var (
 			desc:   `slice item item`,
 			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemSliceItemValue").Type())),
 			expect: `var aValue []p.Item[p.Item[int, float64], string]`,
+		},
+		{
+			desc:   `pointer`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("pointerValue").Type())),
+			expect: `var aValue *float32`,
+		},
+		{
+			desc:   `pointer item`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemPointerValue").Type())),
+			expect: `var aValue *p.Item[int, string]`,
+		},
+		{
+			desc:   `pointer item item`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemPointerItemValue").Type())),
+			expect: `var aValue *p.Item[p.Item[int, float64], string]`,
+		},
+		{
+			desc: `tuple`,
+			codeFn: func() jen.Code {
+				objFn := pkg.Scope().Lookup("NewValue")
+				assert.Assert(t, objFn != nil)
+				objFnType := objFn.Type().(*types.Signature)
+				return jen.Func().Id("OtherNewValue").ParamsFunc(func(rgroup *jen.Group) {
+					for sigParam := range objFnType.Params().Variables() {
+						rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
+					}
+				})
+			},
+			expect: `func OtherNewValue(v1 string, v2 int)`,
+		},
+		{
+			desc: `tuple item`,
+			codeFn: func() jen.Code {
+				objFn := pkg.Scope().Lookup("NewItem")
+				assert.Assert(t, objFn != nil)
+				objFnType := objFn.Type().(*types.Signature)
+				return jen.Func().Id("OtherNewItem").ParamsFunc(func(rgroup *jen.Group) {
+					for sigParam := range objFnType.Params().Variables() {
+						rgroup.Id(sigParam.Name()).Add(GetQualCode(sigParam.Type()))
+					}
+				})
+			},
+			expect: `func OtherNewItem(v1 string, v2 p.Item[string, int])`,
+		},
+		{
+			desc:   `interface`,
+			code:   jen.Var().Id("list").Add(GetQualCode(objList.Type().Underlying().(*types.Interface))),
+			expect: `var list interface{ AddItem(value int) }`,
+		},
+		{
+			desc:   `map`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("mapValue").Type())),
+			expect: `var aValue map[float32]int8`,
+		},
+		{
+			desc:   `map item`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemMapValue").Type())),
+			expect: `var aValue map[string]p.Item[int, string]`,
+		},
+		{
+			desc:   `map item item`,
+			code:   jen.Var().Id("aValue").Add(GetQualCode(pkg.Scope().Lookup("itemMapItemValue").Type())),
+			expect: `var aValue map[string]p.Item[p.Item[int, float64], string]`,
 		},
 		{
 			desc:   `named`,

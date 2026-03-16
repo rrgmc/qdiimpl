@@ -63,7 +63,8 @@ type tc struct {
 	// description for locating the test case
 	desc string
 	// code to generate
-	code jen.Code
+	code   jen.Code
+	codeFn func() jen.Code
 	// expected generated source
 	expect string
 	// expected imports
@@ -76,7 +77,19 @@ func runTestCases(t *testing.T, cases []tc) {
 		if onlyTest != "" && c.desc != onlyTest {
 			continue
 		}
-		rendered := fmt.Sprintf("%#v", c.code)
+		var code jen.Code
+		if c.code != nil && c.codeFn != nil {
+			t.Fatal("code OR codeFn must be set")
+		}
+		if c.code != nil {
+			code = c.code
+		} else if c.codeFn != nil {
+			code = c.codeFn()
+		} else {
+			t.Fatal("code or codeFn must be set")
+		}
+
+		rendered := fmt.Sprintf("%#v", code)
 
 		expected, err := format.Source([]byte(c.expect))
 		if err != nil {
