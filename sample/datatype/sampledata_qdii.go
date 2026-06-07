@@ -51,9 +51,9 @@ func (d *QDSampleData) Get(name string) (any, error) {
 	const methodName = "Get"
 	for _, impl := range d.implGet {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0, r1 := impl(qctx, name)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0, r1
 		}
 	}

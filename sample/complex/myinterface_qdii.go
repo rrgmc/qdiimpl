@@ -58,9 +58,9 @@ func (d *qdMyInterface[T, X]) CloseNotify() <-chan bool {
 	const methodName = "CloseNotify"
 	for _, impl := range d.implCloseNotify {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}
@@ -75,9 +75,9 @@ func (d *qdMyInterface[T, X]) Data() {
 	const methodName = "Data"
 	for _, impl := range d.implData {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		impl(qctx)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return
 		}
 	}
@@ -93,9 +93,9 @@ func (d *qdMyInterface[T, X]) Get(ctx context.Context, name string) (x1 T, err e
 	const methodName = "Get"
 	for _, impl := range d.implGet {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0, r1 := impl(qctx, ctx, name)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0, r1
 		}
 	}
@@ -110,9 +110,9 @@ func (d *qdMyInterface[T, X]) Other(si SecondInterface) int {
 	const methodName = "Other"
 	for _, impl := range d.implOther {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx, si)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}
@@ -127,9 +127,9 @@ func (d *qdMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 	const methodName = "Other2"
 	for _, impl := range d.implOther2 {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx, ti)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}
@@ -144,9 +144,9 @@ func (d *qdMyInterface[T, X]) Set(ctx context.Context, name string, value T) err
 	const methodName = "Set"
 	for _, impl := range d.implSet {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx, ctx, name, value)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}
@@ -161,9 +161,9 @@ func (d *qdMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
 	const methodName = "Unnamed"
 	for _, impl := range d.implUnnamed {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		impl(qctx, p0, p1)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return
 		}
 	}
@@ -179,9 +179,9 @@ func (d *qdMyInterface[T, X]) XGet(ss *SI) *SI {
 	const methodName = "XGet"
 	for _, impl := range d.implXGet {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx, ss)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}
@@ -196,9 +196,9 @@ func (d *qdMyInterface[T, X]) XGet2(ss *XI) *XI {
 	const methodName = "XGet2"
 	for _, impl := range d.implXGet2 {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx, ss)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}
@@ -213,9 +213,9 @@ func (d *qdMyInterface[T, X]) internal() bool {
 	const methodName = "internal"
 	for _, impl := range d.implinternal {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0 := impl(qctx)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0
 		}
 	}

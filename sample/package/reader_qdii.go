@@ -48,9 +48,9 @@ func (d *Reader) Read(p []byte) (n int, err error) {
 	const methodName = "Read"
 	for _, impl := range d.implRead {
 		qctx := d.createContext(methodName)
+		d.addCallMethod(methodName)
 		r0, r1 := impl(qctx, p)
 		if !qctx.isNotSupported {
-			d.addCallMethod(methodName)
 			return r0, r1
 		}
 	}
