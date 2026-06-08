@@ -355,7 +355,6 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			s.For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
 				BlockFunc(func(fgroup *Group) {
 					fgroup.Id("qctx").Op(":=").Id("d").Dot("createContext").Call(Id("methodName"))
-					fgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
 
 					call := Id("impl").CallFunc(func(cgroup *Group) {
 						cgroup.Id("qctx")
@@ -377,6 +376,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 					fgroup.If(Op("!").Id("qctx").Dot("isNotSupported")).
 						BlockFunc(func(rgroup *Group) {
+							rgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
 							if sig.Results().Len() == 0 {
 								rgroup.Return()
 							} else {
@@ -386,6 +386,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				})
 
 			s.If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
+				bgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
 				icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
 					for k := range sig.Params().Len() {
 						igroup.Id(util.GetSignatureParamCallCode(sig, k))
