@@ -26,6 +26,7 @@ var (
 	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
 	doSync           = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
+	callLogger       = flag.Bool("call-logger", false, "add call logger")
 	exportType       = flag.Bool("export-type", false, "whether to export the generated type (default false)")
 	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
 )
@@ -178,6 +179,14 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		}
 		return false
 	})
+	onCallLoggerParamName := util.GetUniqueName("onCallLogger", func(nameExists string) bool {
+		for mtd := range iface.Methods() {
+			if mtd.Name() == nameExists {
+				return true
+			}
+		}
+		return false
+	})
 
 	// default interface generic types
 	codeObjectTypes := util.AddTypeParamsList(objNamedType.TypeParams(), false)
@@ -227,6 +236,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 			group.Id("execCount").Map(String()).Int()
 			group.Id(fallbackParamName).Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
+			if *callLogger {
+				group.Id(onCallLoggerParamName).Add(Func().
+					Params(
+						Id("qdCtx").Op("*").Id(objContext),
+						Id("params").Index().Any(),
+					))
+			}
 			group.Id(onMethodNotImplementedParamName).Add(Func().
 				Params(
 					Id("qdCtx").Op("*").Id(objContext),
@@ -324,6 +340,17 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			}
 		}).BlockFunc(func(s *Group) {
 			s.Const().Id("methodName").Op("=").Lit(mtd.Name())
+
+			if *callLogger {
+				s.Id("d").Dot("callLogger").CallFunc(func(clgroup *Group) {
+					clgroup.Id("d").Dot("createContext").Call(Id("methodName"))
+					clgroup.Index().Any().ValuesFunc(func(vgroup *Group) {
+						for k := range sig.Params().Len() {
+							vgroup.Id(sig.Params().At(k).Name())
+						}
+					})
+				})
+			}
 
 			s.For(List(Id("_"), Id("impl")).Op(":=").Range().Id("d").Dot("impl" + mtd.Name())).
 				BlockFunc(func(fgroup *Group) {
@@ -490,6 +517,26 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		})
 
 	f.Line()
+
+	if *callLogger {
+		// callLogger
+		// # func (d *TYPE) callLogger(qdCtx *TYPEContext, params []any) {}
+		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).
+			Id("callLogger").
+			Params(
+				Id("qdCtx").Op("*").Id(objContext),
+				Id("params").Index().Any(),
+			).
+			BlockFunc(func(bgroup *Group) {
+				bgroup.If(Id("d").Dot(onCallLoggerParamName).Op("!=").Nil()).
+					Block(
+						Id("d").Dot(onCallLoggerParamName).Call(Id("qdCtx"), Id("params")),
+					)
+			})
+
+		f.Line()
+	}
+
 	f.Comment("Options")
 	f.Line()
 
@@ -535,6 +582,26 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 			)),
 		)
 	f.Line()
+
+	if *callLogger {
+		// WithOnCallLogger option
+		// # func WithOnCallLogger(m func (qdCtx *TYPEContext, params []any)) {}
+		f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(onCallLoggerParamName)).TypesFunc(codeObjectTypesWithType).
+			Params(
+				Id("m").Func().
+					Params(
+						Id("qdCtx").Op("*").Id(objContext),
+						Id("params").Index().Any(),
+					),
+			).
+			Params(Id(objOption).TypesFunc(codeObjectTypes)).
+			Block(
+				Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
+					Id("d").Dot(onCallLoggerParamName).Op("=").Id("m"),
+				)),
+			)
+		f.Line()
+	}
 
 	// method options
 	for mtd := range iface.Methods() {
