@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	. "github.com/dave/jennifer/jen"
@@ -15,20 +16,23 @@ import (
 )
 
 var (
-	typeName         = flag.String("type", "", "type name; must be set")
-	typePackageName  = flag.String("type-package", "", "type package path if not the current directory")
-	forcePackageName = flag.String("force-package-name", "", "force generated package name")
-	samePackage      = flag.Bool("same-package", true, "if false will import source package and qualify the types")
-	namePrefix       = flag.String("name-prefix", "", "interface name prefix")
-	nameSuffix       = flag.String("name-suffix", "", "interface name suffix")
-	optionNamePrefix = flag.String("option-name-prefix", "", "option name prefix (WithXXXMethod)")
-	dataType         = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
-	output           = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
-	buildTags        = flag.String("tags", "", "comma-separated list of build tags to apply")
-	doSync           = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
-	callLogger       = flag.Bool("call-logger", false, "add call logger")
-	exportType       = flag.Bool("export-type", false, "whether to export the generated type (default false)")
-	overwrite        = flag.Bool("overwrite", false, "overwrite file if exists")
+	typeName             = flag.String("type", "", "type name; must be set")
+	allInterfaces        = flag.Bool("all-interfaces", false, "if true will ignore -type and output all interfaces")
+	skipInterfaces       = flag.String("skip-interfaces", "", "list of interface names to skip (if -all-interfaces)")
+	typePackageName      = flag.String("type-package", "", "type package path if not the current directory")
+	forcePackageName     = flag.String("force-package-name", "", "force generated package name")
+	samePackage          = flag.Bool("same-package", true, "if false will import source package and qualify the types")
+	namePrefix           = flag.String("name-prefix", "", "interface name prefix")
+	nameSuffix           = flag.String("name-suffix", "", "interface name suffix")
+	optionNamePrefix     = flag.String("option-name-prefix", "", "option name prefix (WithXXXMethod)")
+	optionNamePrefixSelf = flag.Bool("option-name-prefix-self", false, "use self name as option name prefix (WithXXXMethod)")
+	dataType             = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
+	output               = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
+	buildTags            = flag.String("tags", "", "comma-separated list of build tags to apply")
+	doSync               = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
+	callLogger           = flag.Bool("call-logger", false, "add call logger")
+	exportType           = flag.Bool("export-type", false, "whether to export the generated type (default false)")
+	overwrite            = flag.Bool("overwrite", false, "overwrite file if exists")
 )
 
 // Usage is a replacement usage function for the flags package.
@@ -44,7 +48,7 @@ func Main() {
 	log.SetPrefix("qdiimpl: ")
 	flag.Usage = Usage
 	flag.Parse()
-	if len(*typeName) == 0 {
+	if !*allInterfaces && len(*typeName) == 0 {
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -76,11 +80,63 @@ func run(source, typ string, tags []string) error {
 		return fmt.Errorf("couldn't load source package: %s", err)
 	}
 
+	if *allInterfaces {
+		return runAllInterfaces(source, srcPkg, tags)
+	}
+
 	obj := srcPkg.Types.Scope().Lookup(typ)
 	if obj == nil {
 		return fmt.Errorf("interface not found: %s", typ)
 	}
 
+	return runType(source, typ, obj, tags)
+}
+
+func runAllInterfaces(source string, pkg *packages.Package, tags []string) error {
+	skipList := strings.Split(*skipInterfaces, ",")
+
+	scope := pkg.Types.Scope()
+	for _, name := range scope.Names() {
+		obj := scope.Lookup(name)
+		if obj == nil {
+			continue
+		}
+
+		if !obj.Exported() {
+			continue
+		}
+
+		var typ *types.Named
+
+		ttyp := obj.Type()
+
+		typ, ok := ttyp.(*types.Named)
+		if !ok {
+			continue
+		}
+
+		if !typ.Obj().Exported() || typ.Obj().Pkg() == nil {
+			continue
+		}
+
+		_, ok = typ.Underlying().(*types.Interface)
+		if !ok {
+			continue
+		}
+
+		if slices.Contains(skipList, typ.Obj().Name()) {
+			continue
+		}
+
+		err := runType(source, typ.Obj().Name(), obj, tags)
+		if err != nil {
+			return fmt.Errorf("error processing '%s': %w", obj.Name(), err)
+		}
+	}
+	return nil
+}
+
+func runType(source string, typ string, obj types.Object, tags []string) error {
 	if !types.IsInterface(obj.Type()) {
 		return fmt.Errorf("%s (%s) is not an interface", typ, obj.Type())
 	}
@@ -98,12 +154,7 @@ func run(source, typ string, tags []string) error {
 		}
 	}
 
-	err = gen(outputName, obj, obj.Type().Underlying().(*types.Interface).Complete())
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return gen(outputName, obj, obj.Type().Underlying().(*types.Interface).Complete())
 }
 
 func gen(outputName string, obj types.Object, iface *types.Interface) error {
@@ -143,6 +194,9 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	objContext := objNameExported + "Context"
 	objOption := objNameExported + "Option"
 	objOptionPrefix := *optionNamePrefix
+	if *optionNamePrefixSelf {
+		objOptionPrefix = obj.Name()
+	}
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
@@ -641,6 +695,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	// Write to file.
 	fmt.Printf("Writing file %s...", outputName)
+	defer fmt.Printf("\n")
 
 	outFile, err := os.Create(outputName)
 	if err != nil {
