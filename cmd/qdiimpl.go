@@ -27,6 +27,7 @@ var (
 	optionNamePrefix     = flag.String("option-name-prefix", "", "option name prefix (WithXXXMethod)")
 	optionNamePrefixSelf = flag.Bool("option-name-prefix-self", false, "use self name as option name prefix (WithXXXMethod)")
 	dataType             = flag.String("data-type", "", "add a data member of this type (e.g.: `any`, `package.com/data.XData`)")
+	dataTypeSelf         = flag.Bool("data-type-self", false, "add a data member of the self type with `Data` suffix")
 	output               = flag.String("output", "", "output file name; default srcdir/<type>_qdii.go")
 	buildTags            = flag.String("tags", "", "comma-separated list of build tags to apply")
 	doSync               = flag.Bool("sync", true, "use mutex to prevent concurrent accesses")
@@ -200,10 +201,14 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
 
+	genDataType := *dataType
+	if *dataTypeSelf {
+		genDataType = fmt.Sprintf("%sData", obj.Name())
+	}
 	var err error
 	var codeDataType *Statement
-	if *dataType != "" {
-		codeDataType, err = util.TypeNameCode(*dataType)
+	if genDataType != "" {
+		codeDataType, err = util.TypeNameCode(genDataType)
 		if err != nil {
 			return err
 		}
