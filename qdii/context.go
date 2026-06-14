@@ -6,4 +6,5 @@ type Context interface {
 	CallerFunc() string
 	CallerFile() string
 	CallerLine() int
+	NotSupported()
 }

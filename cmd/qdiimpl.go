@@ -255,15 +255,16 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// # type TYPEContext struct {}
 	f.Type().Id(objContext).
 		StructFunc(func(sgroup *Group) {
+			if codeDataType != nil {
+				sgroup.Id("Data").Add(codeDataType)
+				sgroup.Line()
+			}
 			sgroup.Id("methodName").String()
 			sgroup.Id("execCount").Int()
 			sgroup.Id("callerFunc").String()
 			sgroup.Id("callerFile").String()
 			sgroup.Id("callerLine").Int()
 			sgroup.Id("isNotSupported").Bool()
-			if codeDataType != nil {
-				sgroup.Id("Data").Add(codeDataType)
-			}
 		})
 	f.Line()
 
