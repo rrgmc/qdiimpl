@@ -255,11 +255,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	// # type TYPEContext struct {}
 	f.Type().Id(objContext).
 		StructFunc(func(sgroup *Group) {
-			sgroup.Id("MethodName").String()
-			sgroup.Id("ExecCount").Int()
-			sgroup.Id("CallerFunc").String()
-			sgroup.Id("CallerFile").String()
-			sgroup.Id("CallerLine").Int()
+			sgroup.Id("methodName").String()
+			sgroup.Id("execCount").Int()
+			sgroup.Id("callerFunc").String()
+			sgroup.Id("callerFile").String()
+			sgroup.Id("callerLine").Int()
 			sgroup.Id("isNotSupported").Bool()
 			if codeDataType != nil {
 				sgroup.Id("Data").Add(codeDataType)
@@ -276,6 +276,52 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		Block(
 			Id("c").Dot("isNotSupported").Op("=").True(),
 		)
+	f.Line()
+
+	f.Func().Params(Id("c").Op("*").Id(objContext)).
+		Id("MethodName").
+		Params().
+		Params(String()).
+		Block(
+			Return(Id("c").Dot("methodName")),
+		)
+	f.Line()
+
+	f.Func().Params(Id("c").Op("*").Id(objContext)).
+		Id("ExecCount").
+		Params().
+		Params(Int()).
+		Block(
+			Return(Id("c").Dot("execCount")),
+		)
+	f.Line()
+
+	f.Func().Params(Id("c").Op("*").Id(objContext)).
+		Id("CallerFunc").
+		Params().
+		Params(String()).
+		Block(
+			Return(Id("c").Dot("callerFunc")),
+		)
+	f.Line()
+
+	f.Func().Params(Id("c").Op("*").Id(objContext)).
+		Id("CallerFile").
+		Params().
+		Params(String()).
+		Block(
+			Return(Id("c").Dot("callerFile")),
+		)
+	f.Line()
+
+	f.Func().Params(Id("c").Op("*").Id(objContext)).
+		Id("CallerLine").
+		Params().
+		Params(Int()).
+		Block(
+			Return(Id("c").Dot("callerLine")),
+		)
+	f.Line()
 
 	// Struct implementation
 	// # type TYPE struct {}
@@ -532,12 +578,12 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					Separator: ",",
 					Multi:     true,
 				}, func(vgroup *Group) {
-					vgroup.Id("MethodName").Op(":").Id("methodName")
-					vgroup.Id("ExecCount").Op(":").Id("d").
+					vgroup.Id("methodName").Op(":").Id("methodName")
+					vgroup.Id("execCount").Op(":").Id("d").
 						Dot("execCount").Index(Id("methodName"))
-					vgroup.Id("CallerFunc").Op(":").Id("callerFunc")
-					vgroup.Id("CallerFile").Op(":").Id("callerFile")
-					vgroup.Id("CallerLine").Op(":").Id("callerLine")
+					vgroup.Id("callerFunc").Op(":").Id("callerFunc")
+					vgroup.Id("callerFile").Op(":").Id("callerFile")
+					vgroup.Id("callerLine").Op(":").Id("callerLine")
 					if codeDataType != nil {
 						vgroup.Id("Data").Op(":").Id("d").Dot(dataParamName)
 					}
