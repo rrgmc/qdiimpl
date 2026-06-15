@@ -1,6 +1,9 @@
 version: '3'
 
 tasks:
+  install:
+    cmds:
+      - 'go install github.com/rrgmc/qdiimpl'
   current-version:
     cmds:
       - 'echo "Version: {{.GIT_TAG_CURRENT}}"'

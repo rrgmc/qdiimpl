@@ -196,7 +196,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 	objOption := objNameExported + "Option"
 	objOptionPrefix := *optionNamePrefix
 	if *optionNamePrefixSelf {
-		objOptionPrefix = obj.Name()
+		objOptionPrefix = uprefix + obj.Name() + *nameSuffix
 	}
 
 	objNamedType := obj.Type().(*types.Named) // interfaces are always named types
