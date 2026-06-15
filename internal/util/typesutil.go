@@ -12,6 +12,13 @@ func ParamName(idx int, param *types.Var) string {
 	return fmt.Sprintf("p%d", idx)
 }
 
+func MethodParamName(name string) string {
+	if name == "d" {
+		return "d1"
+	}
+	return name
+}
+
 func FormatObjectName(obj types.Object) string {
 	pkg := ""
 	if obj.Pkg().Name() != "" {

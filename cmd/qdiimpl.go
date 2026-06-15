@@ -438,11 +438,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 		f.Commentf("%s implements [%s.%s].", mtd.Name(), util.FormatObjectName(obj), mtd.Name())
 		f.Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Id(mtd.Name()).ParamsFunc(func(pgroup *Group) {
 			for k, sigParam := range util.IterWithIndex(sig.Params().Variables()) {
-				pgroup.Id(util.ParamName(k, sigParam)).Add(util.GetSignatureParamQualCode(sig, k))
+				pgroup.Id(util.MethodParamName(util.ParamName(k, sigParam))).Add(util.GetSignatureParamQualCode(sig, k))
 			}
 		}).ParamsFunc(func(rgroup *Group) {
 			for sigParam := range sig.Results().Variables() {
-				rgroup.Id(sigParam.Name()).Add(util.GetQualCode(sigParam.Type()))
+				rgroup.Id(util.MethodParamName(sigParam.Name())).Add(util.GetQualCode(sigParam.Type()))
 			}
 		}).BlockFunc(func(s *Group) {
 			s.Const().Id("methodName").Op("=").Lit(mtd.Name())
@@ -452,7 +452,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 					clgroup.Id("d").Dot("createContext").Call(Id("methodName"))
 					clgroup.Index().Any().ValuesFunc(func(vgroup *Group) {
 						for k := range sig.Params().Len() {
-							vgroup.Id(sig.Params().At(k).Name())
+							vgroup.Id(util.MethodParamName(sig.Params().At(k).Name()))
 						}
 					})
 				})

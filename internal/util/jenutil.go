@@ -84,7 +84,7 @@ func GetSignatureParamQualCode(sig *types.Signature, i int) *jen.Statement {
 
 func GetSignatureParamCallCode(sig *types.Signature, i int) string {
 	sigParam := sig.Params().At(i)
-	name := ParamName(i, sigParam)
+	name := MethodParamName(ParamName(i, sigParam))
 	if sig.Variadic() && i == sig.Params().Len()-1 {
 		return name + "..."
 	}
