@@ -624,7 +624,7 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				)
 			bgroup.Return(Qual("fmt", "Errorf").
 				Call(Lit(fmt.Sprintf("[%s] method '%%s' %%s", objName)),
-					Id("qdCtx").Dot("MethodName"), Id("msg")))
+					Id("qdCtx").Dot("MethodName").Call(), Id("msg")))
 		})
 
 	f.Line()
