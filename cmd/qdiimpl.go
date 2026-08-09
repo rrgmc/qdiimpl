@@ -35,6 +35,7 @@ var (
 	exportType           = flag.Bool("export-type", false, "whether to export the generated type (default false)")
 	overwrite            = flag.Bool("overwrite", false, "overwrite file if exists")
 	noFormat             = flag.Bool("no-format", false, "disable file formatting")
+	fallbackFunc         = flag.Bool("fallback-func", false, "make fallback a function")
 )
 
 // Usage is a replacement usage function for the flags package.
@@ -345,7 +346,11 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 				group.Id("lock").Qual("sync", "Mutex")
 			}
 			group.Id("execCount").Map(String()).Int()
-			group.Id(fallbackParamName).Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
+			if !*fallbackFunc {
+				group.Id(fallbackParamName).Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
+			} else {
+				group.Id(fallbackParamName).Add(Func().Params().Params(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes), Error()))
+			}
 			if *callLogger {
 				group.Id(onCallLoggerParamName).Add(Func().
 					Params(
@@ -497,7 +502,13 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 			s.If(Id("d").Dot(fallbackParamName).Op("!=").Nil()).BlockFunc(func(bgroup *Group) {
 				bgroup.Id("d").Dot("addCallMethod").Call(Id("methodName"))
-				icall := Id("d").Dot(fallbackParamName).Dot(mtd.Name()).CallFunc(func(igroup *Group) {
+				rootical := Id("d").Dot(fallbackParamName)
+				if *fallbackFunc {
+					bgroup.List(Id("fallback"), Id("err")).Op(":=").Id("d").Dot("fallback").Call()
+					bgroup.If(Id("err").Op("!=").Nil()).Block(Panic(Qual("fmt", "Errorf").Call(Lit("fallback error: %w"), Id("err"))))
+					rootical = Id("fallback")
+				}
+				icall := rootical.Dot(mtd.Name()).CallFunc(func(igroup *Group) {
 					for k := range sig.Params().Len() {
 						igroup.Id(util.GetSignatureParamCallCode(sig, k))
 					}
@@ -666,9 +677,15 @@ func gen(outputName string, obj types.Object, iface *types.Interface) error {
 
 	// WithFallback option
 	// # func WithFallback(fallback SOURCETYPE) TYPEOption {}
-	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).Params(
-		Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes)),
-	).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
+	f.Func().Id("With" + objOptionPrefix + util.InitialToUpper(fallbackParamName)).TypesFunc(codeObjectTypesWithType).
+		ParamsFunc(func(bgroup *Group) {
+			if !*fallbackFunc {
+				bgroup.Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
+			} else {
+				bgroup.Id("fallback").Add(Func().Params().Params(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes), Error()))
+			}
+			// bgroup.Id("fallback").Add(util.GetQualCode(obj.Type()).TypesFunc(codeObjectTypes))
+		}).Params(Id(objOption).TypesFunc(codeObjectTypes)).Block(
 		Return(Func().Params(Id("d").Op("*").Id(objName).TypesFunc(codeObjectTypes)).Block(
 			Id("d").Dot(fallbackParamName).Op("=").Id("fallback"),
 		)),
