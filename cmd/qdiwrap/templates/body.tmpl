@@ -1,0 +1,55 @@
+{{- $name := .Vars.StructName -}}
+{{- $opt := .Vars.OptionName -}}
+{{- $ctor := .Vars.CtorName -}}
+{{- $op := .Vars.OptionPrefix -}}
+{{- $GT := .Interface.Generics.Types -}}
+{{- $G := .Interface.Generics.Params -}}
+{{- $iface := printf "%s%s" .Interface.Type $G -}}
+
+import "fmt"
+
+// {{$name}} is a quick'n'dirty implementation of [{{.Interface.Type}}].
+type {{$name}}{{$GT}} struct {
+	fallback {{$iface}}
+{{range $method := .Interface.Methods}}	impl{{$method.Name}} func{{$method.Signature}}
+{{end}}}
+
+{{if not $GT}}var _ {{$iface}} = (*{{$name}})(nil){{end}}
+
+type {{$opt}}{{$GT}} func(*{{$name}}{{$G}})
+
+func {{$ctor}}{{$GT}}(options ...{{$opt}}{{$G}}) *{{$name}}{{$G}} {
+	ret := &{{$name}}{{$G}}{}
+	for _, opt := range options {
+		opt(ret)
+	}
+	return ret
+}
+{{range $method := .Interface.Methods}}
+// {{$method.Name}} implements [{{$.Interface.Type}}.{{$method.Name}}].
+func (_d *{{$name}}{{$G}}) {{$method.Declaration}} {
+	if _d.impl{{$method.Name}} != nil {
+		{{$method.Pass "_d.impl"}}
+	}
+	if _d.fallback != nil {
+		{{$method.Pass "_d.fallback."}}
+	}
+	panic(fmt.Errorf("[{{$name}}] method '%s' not implemented", "{{$method.Name}}"))
+}
+{{end}}
+// Options
+
+// With{{$op}}Fallback sets the fallback called when a method has no implementation.
+func With{{$op}}Fallback{{$GT}}(fallback {{$iface}}) {{$opt}}{{$G}} {
+	return func(_d *{{$name}}{{$G}}) {
+		_d.fallback = fallback
+	}
+}
+{{range $method := .Interface.Methods}}
+// With{{$op}}{{$method.Name}} sets the implementation of [{{$.Interface.Type}}.{{$method.Name}}].
+func With{{$op}}{{$method.Name}}{{$GT}}(impl{{$method.Name}} func{{$method.Signature}}) {{$opt}}{{$G}} {
+	return func(_d *{{$name}}{{$G}}) {
+		_d.impl{{$method.Name}} = impl{{$method.Name}}
+	}
+}
+{{end}}
