@@ -24,7 +24,7 @@ func main() {
 			return fmt.Sprintf("a%v", *d), nil
 		}),
 		WithOnMethodNotImplemented[string, IIImpl](func(qdCtx *QDMyInterfaceContext, hasCallbacks bool) error {
-			return fmt.Errorf("the method '%s' was not implemented (hasCallbacks: %t)", qdCtx.MethodName, hasCallbacks)
+			return fmt.Errorf("the method '%s' was not implemented (hasCallbacks: %t)", qdCtx.MethodName(), hasCallbacks)
 		}),
 	)
 

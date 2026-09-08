@@ -9,19 +9,40 @@ import (
 )
 
 type QDSampleDataContext struct {
-	MethodName     string
-	ExecCount      int
-	CallerFunc     string
-	CallerFile     string
-	CallerLine     int
+	Data *idata.IData
+
+	methodName     string
+	execCount      int
+	callerFunc     string
+	callerFile     string
+	callerLine     int
 	isNotSupported bool
-	Data           *idata.IData
 }
 
 // NotSupported should be called if the current callback don't support the passed arguments.
 // The function return values will be ignored.
 func (c *QDSampleDataContext) NotSupported() {
 	c.isNotSupported = true
+}
+
+func (c *QDSampleDataContext) MethodName() string {
+	return c.methodName
+}
+
+func (c *QDSampleDataContext) ExecCount() int {
+	return c.execCount
+}
+
+func (c *QDSampleDataContext) CallerFunc() string {
+	return c.callerFunc
+}
+
+func (c *QDSampleDataContext) CallerFile() string {
+	return c.callerFile
+}
+
+func (c *QDSampleDataContext) CallerLine() int {
+	return c.callerLine
 }
 
 type QDSampleData struct {
@@ -51,13 +72,14 @@ func (d *QDSampleData) Get(name string) (any, error) {
 	const methodName = "Get"
 	for _, impl := range d.implGet {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0, r1 := impl(qctx, name)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0, r1
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.Get(name)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implGet) > 0))
@@ -82,11 +104,11 @@ func (d *QDSampleData) createContext(methodName string) *QDSampleDataContext {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	return &QDSampleDataContext{
-		MethodName: methodName,
-		ExecCount:  d.execCount[methodName],
-		CallerFunc: callerFunc,
-		CallerFile: callerFile,
-		CallerLine: callerLine,
+		methodName: methodName,
+		execCount:  d.execCount[methodName],
+		callerFunc: callerFunc,
+		callerFile: callerFile,
+		callerLine: callerLine,
 		Data:       d.Data,
 	}
 }
@@ -101,7 +123,7 @@ func (d *QDSampleData) methodNotImplemented(qdCtx *QDSampleDataContext, hasCallb
 	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
-	return fmt.Errorf("[QDSampleData] method '%s' %s", qdCtx.MethodName, msg)
+	return fmt.Errorf("[QDSampleData] method '%s' %s", qdCtx.MethodName(), msg)
 }
 
 // Options

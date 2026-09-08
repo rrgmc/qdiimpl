@@ -84,17 +84,46 @@ import (
 )
 
 type ReaderContext struct {
-    ExecCount  int
-    CallerFunc string
-    CallerFile string
-    CallerLine int
+    methodName     string
+    execCount      int
+    callerFunc     string
+    callerFile     string
+    callerLine     int
+    isNotSupported bool
+}
+
+// NotSupported should be called if the current callback don't support the passed arguments.
+// The function return values will be ignored.
+func (c *ReaderContext) NotSupported() {
+    c.isNotSupported = true
+}
+
+func (c *ReaderContext) MethodName() string {
+    return c.methodName
+}
+
+func (c *ReaderContext) ExecCount() int {
+    return c.execCount
+}
+
+func (c *ReaderContext) CallerFunc() string {
+    return c.callerFunc
+}
+
+func (c *ReaderContext) CallerFile() string {
+    return c.callerFile
+}
+
+func (c *ReaderContext) CallerLine() int {
+    return c.callerLine
 }
 
 type Reader struct {
-    lock      sync.Mutex
-    execCount map[string]int
-    fallback  io.Reader
-    implRead  func(qdCtx *ReaderContext, p []byte) (n int, err error)
+    lock                   sync.Mutex
+    execCount              map[string]int
+    fallback               io.Reader
+    onMethodNotImplemented func(qdCtx *ReaderContext, hasCallbacks bool) error
+    implRead               []func(qdCtx *ReaderContext, p []byte) (n int, err error)
 }
 
 var _ io.Reader = (*Reader)(nil)
@@ -111,10 +140,20 @@ func NewReader(options ...ReaderOption) io.Reader {
 
 // Read implements [io.Reader.Read].
 func (d *Reader) Read(p []byte) (n int, err error) {
-    if d.implRead == nil && d.fallback != nil {
+    const methodName = "Read"
+    for _, impl := range d.implRead {
+        qctx := d.createContext(methodName)
+        r0, r1 := impl(qctx, p)
+        if !qctx.isNotSupported {
+            d.addCallMethod(methodName)
+            return r0, r1
+        }
+    }
+    if d.fallback != nil {
+        d.addCallMethod(methodName)
         return d.fallback.Read(p)
     }
-    return d.implRead(d.createContext("Read", d.implRead == nil), p)
+    panic(d.methodNotImplemented(d.createContext(methodName), len(d.implRead) > 0))
 }
 
 func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line int) {
@@ -125,19 +164,36 @@ func (d *Reader) getCallerFuncName(skip int) (funcName string, file string, line
     return runtime.FuncForPC(counter).Name(), file, line
 }
 
-func (d *Reader) checkCallMethod(methodName string, implIsNil bool) (count int) {
-    if implIsNil {
-        panic(fmt.Errorf("[Reader] method '%s' not implemented", methodName))
-    }
+func (d *Reader) addCallMethod(methodName string) {
     d.lock.Lock()
     defer d.lock.Unlock()
     d.execCount[methodName]++
-    return d.execCount[methodName]
 }
 
-func (d *Reader) createContext(methodName string, implIsNil bool) *ReaderContext {
+func (d *Reader) createContext(methodName string) *ReaderContext {
     callerFunc, callerFile, callerLine := d.getCallerFuncName(3)
-    return &ReaderContext{ExecCount: d.checkCallMethod(methodName, implIsNil), CallerFunc: callerFunc, CallerFile: callerFile, CallerLine: callerLine}
+    d.lock.Lock()
+    defer d.lock.Unlock()
+    return &ReaderContext{
+        methodName: methodName,
+        execCount:  d.execCount[methodName],
+        callerFunc: callerFunc,
+        callerFile: callerFile,
+        callerLine: callerLine,
+    }
+}
+
+func (d *Reader) methodNotImplemented(qdCtx *ReaderContext, hasCallbacks bool) error {
+    if d.onMethodNotImplemented != nil {
+        if err := d.onMethodNotImplemented(qdCtx, hasCallbacks); err != nil {
+            return err
+        }
+    }
+    msg := "not implemented"
+    if hasCallbacks {
+        msg = "not supported by any callbacks"
+    }
+    return fmt.Errorf("[Reader] method '%s' %s", qdCtx.MethodName(), msg)
 }
 
 // Options
@@ -148,10 +204,16 @@ func WithFallback(fallback io.Reader) ReaderOption {
     }
 }
 
+func WithOnMethodNotImplemented(m func(qdCtx *ReaderContext, hasCallbacks bool) error) ReaderOption {
+    return func(d *Reader) {
+        d.onMethodNotImplemented = m
+    }
+}
+
 // WithRead implements [io.Reader.Read].
 func WithRead(implRead func(qdCtx *ReaderContext, p []byte) (n int, err error)) ReaderOption {
     return func(d *Reader) {
-        d.implRead = implRead
+        d.implRead = append(d.implRead, implRead)
     }
 }
 ```
@@ -161,7 +223,7 @@ Usage:
 ```go
 func main() {
     reader := NewReader(
-        WithReaderRead(func(qdCtx *ReaderContext, p []byte) (n int, err error) {
+        WithRead(func(qdCtx *ReaderContext, p []byte) (n int, err error) {
             n = copy(p, []byte("test"))
             return n, nil
         }),
@@ -196,15 +258,21 @@ so `WithRead()` would become `WithQDRead()`.
 
 ### QD Context
 
-Each method is passed a "QDContext" which contains these fields:
+Each method is passed a "QDContext", which implements the `qdii.Context` interface
+(declared in the `qdii` module):
 
-- `ExecCount`: times this method was called since the execution start.
-- `CallerFunc`: fully-qualified function name that called the interface method.
-- `CallerFile`: source file name of the function that called the interface method.
-- `CallerLine`: line number of the source file of the function that called the interface method.
-- `Data`: a custom data field set by `WithData` option. (only when `data-type` command line parameter is set)
+- `MethodName()`: name of the interface method that was called.
+- `ExecCount()`: times this method was called since the execution start.
+- `CallerFunc()`: fully-qualified function name that called the interface method.
+- `CallerFile()`: source file name of the function that called the interface method.
+- `CallerLine()`: line number of the source file of the function that called the interface method.
+- `NotSupported()`: signals that this handler cannot serve the call, so the return values are
+  ignored and the next registered handler is tried.
 
-Use these properties to help detect where the method was called from and return different responses if needed.
+It also has a `Data` field, a custom data value set by the `WithData` option (only when the
+`data-type` command line parameter is set).
+
+Use these to help detect where the method was called from and return different responses if needed.
 
 # Author
 

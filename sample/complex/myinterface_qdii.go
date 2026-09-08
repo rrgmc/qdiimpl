@@ -9,19 +9,40 @@ import (
 )
 
 type QDMyInterfaceContext struct {
-	MethodName     string
-	ExecCount      int
-	CallerFunc     string
-	CallerFile     string
-	CallerLine     int
+	Data any
+
+	methodName     string
+	execCount      int
+	callerFunc     string
+	callerFile     string
+	callerLine     int
 	isNotSupported bool
-	Data           any
 }
 
 // NotSupported should be called if the current callback don't support the passed arguments.
 // The function return values will be ignored.
 func (c *QDMyInterfaceContext) NotSupported() {
 	c.isNotSupported = true
+}
+
+func (c *QDMyInterfaceContext) MethodName() string {
+	return c.methodName
+}
+
+func (c *QDMyInterfaceContext) ExecCount() int {
+	return c.execCount
+}
+
+func (c *QDMyInterfaceContext) CallerFunc() string {
+	return c.callerFunc
+}
+
+func (c *QDMyInterfaceContext) CallerFile() string {
+	return c.callerFile
+}
+
+func (c *QDMyInterfaceContext) CallerLine() int {
+	return c.callerLine
 }
 
 type qdMyInterface[T any, X II] struct {
@@ -58,13 +79,14 @@ func (d *qdMyInterface[T, X]) CloseNotify() <-chan bool {
 	const methodName = "CloseNotify"
 	for _, impl := range d.implCloseNotify {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.CloseNotify()
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implCloseNotify) > 0))
@@ -75,13 +97,14 @@ func (d *qdMyInterface[T, X]) Data() {
 	const methodName = "Data"
 	for _, impl := range d.implData {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		impl(qctx)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		d.fallback.Data()
 		return
 	}
@@ -93,13 +116,14 @@ func (d *qdMyInterface[T, X]) Get(ctx context.Context, name string) (x1 T, err e
 	const methodName = "Get"
 	for _, impl := range d.implGet {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0, r1 := impl(qctx, ctx, name)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0, r1
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.Get(ctx, name)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implGet) > 0))
@@ -110,13 +134,14 @@ func (d *qdMyInterface[T, X]) Other(si SecondInterface) int {
 	const methodName = "Other"
 	for _, impl := range d.implOther {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx, si)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.Other(si)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implOther) > 0))
@@ -127,13 +152,14 @@ func (d *qdMyInterface[T, X]) Other2(ti ThirdInterface[T]) int {
 	const methodName = "Other2"
 	for _, impl := range d.implOther2 {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx, ti)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.Other2(ti)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implOther2) > 0))
@@ -144,13 +170,14 @@ func (d *qdMyInterface[T, X]) Set(ctx context.Context, name string, value T) err
 	const methodName = "Set"
 	for _, impl := range d.implSet {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx, ctx, name, value)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.Set(ctx, name, value)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implSet) > 0))
@@ -161,13 +188,14 @@ func (d *qdMyInterface[T, X]) Unnamed(p0 bool, p1 string) {
 	const methodName = "Unnamed"
 	for _, impl := range d.implUnnamed {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		impl(qctx, p0, p1)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		d.fallback.Unnamed(p0, p1)
 		return
 	}
@@ -179,13 +207,14 @@ func (d *qdMyInterface[T, X]) XGet(ss *SI) *SI {
 	const methodName = "XGet"
 	for _, impl := range d.implXGet {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx, ss)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.XGet(ss)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implXGet) > 0))
@@ -196,13 +225,14 @@ func (d *qdMyInterface[T, X]) XGet2(ss *XI) *XI {
 	const methodName = "XGet2"
 	for _, impl := range d.implXGet2 {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx, ss)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.XGet2(ss)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implXGet2) > 0))
@@ -213,13 +243,14 @@ func (d *qdMyInterface[T, X]) internal() bool {
 	const methodName = "internal"
 	for _, impl := range d.implinternal {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0 := impl(qctx)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.internal()
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implinternal) > 0))
@@ -244,11 +275,11 @@ func (d *qdMyInterface[T, X]) createContext(methodName string) *QDMyInterfaceCon
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	return &QDMyInterfaceContext{
-		MethodName: methodName,
-		ExecCount:  d.execCount[methodName],
-		CallerFunc: callerFunc,
-		CallerFile: callerFile,
-		CallerLine: callerLine,
+		methodName: methodName,
+		execCount:  d.execCount[methodName],
+		callerFunc: callerFunc,
+		callerFile: callerFile,
+		callerLine: callerLine,
 		Data:       d.DataQDII,
 	}
 }
@@ -263,7 +294,7 @@ func (d *qdMyInterface[T, X]) methodNotImplemented(qdCtx *QDMyInterfaceContext, 
 	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
-	return fmt.Errorf("[qdMyInterface] method '%s' %s", qdCtx.MethodName, msg)
+	return fmt.Errorf("[qdMyInterface] method '%s' %s", qdCtx.MethodName(), msg)
 }
 
 // Options

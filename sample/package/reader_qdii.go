@@ -9,11 +9,11 @@ import (
 )
 
 type ReaderContext struct {
-	MethodName     string
-	ExecCount      int
-	CallerFunc     string
-	CallerFile     string
-	CallerLine     int
+	methodName     string
+	execCount      int
+	callerFunc     string
+	callerFile     string
+	callerLine     int
 	isNotSupported bool
 }
 
@@ -21,6 +21,26 @@ type ReaderContext struct {
 // The function return values will be ignored.
 func (c *ReaderContext) NotSupported() {
 	c.isNotSupported = true
+}
+
+func (c *ReaderContext) MethodName() string {
+	return c.methodName
+}
+
+func (c *ReaderContext) ExecCount() int {
+	return c.execCount
+}
+
+func (c *ReaderContext) CallerFunc() string {
+	return c.callerFunc
+}
+
+func (c *ReaderContext) CallerFile() string {
+	return c.callerFile
+}
+
+func (c *ReaderContext) CallerLine() int {
+	return c.callerLine
 }
 
 type Reader struct {
@@ -48,13 +68,14 @@ func (d *Reader) Read(p []byte) (n int, err error) {
 	const methodName = "Read"
 	for _, impl := range d.implRead {
 		qctx := d.createContext(methodName)
-		d.addCallMethod(methodName)
 		r0, r1 := impl(qctx, p)
 		if !qctx.isNotSupported {
+			d.addCallMethod(methodName)
 			return r0, r1
 		}
 	}
 	if d.fallback != nil {
+		d.addCallMethod(methodName)
 		return d.fallback.Read(p)
 	}
 	panic(d.methodNotImplemented(d.createContext(methodName), len(d.implRead) > 0))
@@ -79,11 +100,11 @@ func (d *Reader) createContext(methodName string) *ReaderContext {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	return &ReaderContext{
-		MethodName: methodName,
-		ExecCount:  d.execCount[methodName],
-		CallerFunc: callerFunc,
-		CallerFile: callerFile,
-		CallerLine: callerLine,
+		methodName: methodName,
+		execCount:  d.execCount[methodName],
+		callerFunc: callerFunc,
+		callerFile: callerFile,
+		callerLine: callerLine,
 	}
 }
 
@@ -97,7 +118,7 @@ func (d *Reader) methodNotImplemented(qdCtx *ReaderContext, hasCallbacks bool) e
 	if hasCallbacks {
 		msg = "not supported by any callbacks"
 	}
-	return fmt.Errorf("[Reader] method '%s' %s", qdCtx.MethodName, msg)
+	return fmt.Errorf("[Reader] method '%s' %s", qdCtx.MethodName(), msg)
 }
 
 // Options
