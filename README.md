@@ -258,8 +258,8 @@ so `WithRead()` would become `WithQDRead()`.
 
 ### QD Context
 
-Each method is passed a "QDContext", which implements the `qdii.Context` interface
-(declared in the `qdii` module):
+Each method is passed a "QDContext", which implements the
+[`qdii.Context`](https://pkg.go.dev/github.com/rrgmc/qdiimpl/qdii#Context) interface:
 
 - `MethodName()`: name of the interface method that was called.
 - `ExecCount()`: times this method was called since the execution start.
